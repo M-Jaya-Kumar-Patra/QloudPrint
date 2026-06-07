@@ -28,6 +28,9 @@ public class PaymentService {
     @Value("${cashfree.client.secret}")
     private String clientSecret;
 
+    @Value("${frontend.url}")
+    private String frontendUrl;
+
     public String createPaymentOrder(
             PaymentRequest request
     ) {
