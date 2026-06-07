@@ -66,7 +66,7 @@ public class PaymentService {
 
         orderMeta.put(
                 "return_url",
-                "http://localhost:5173/payment-success?order_id={order_id}"
+                frontendUrl + "/payment-success?order_id={order_id}"
         );
 
         body.put(

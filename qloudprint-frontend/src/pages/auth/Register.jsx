@@ -10,17 +10,56 @@ import ThemeToggle from "../../components/common/ThemeToggle";
 const roles = [
   { id: "CUSTOMER", label: "Customer" },
   { id: "SHOPKEEPER", label: "Shopkeeper" },
-  { id: "ADMIN", label: "Admin" },
 ];
 
 const Register = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ name: "", email: "", password: "", role: "CUSTOMER" });
+  const [passwordStrength, setPasswordStrength] = useState({
+  score: 0,
+  label: "",
+});
 
-  const handleChange = (event) => {
-    setFormData({ ...formData, [event.target.name]: event.target.value });
-  };
+const checkPasswordStrength = (password) => {
+
+  let score = 0;
+
+  if (password.length >= 8) score++;
+
+  if (/[A-Z]/.test(password)) score++;
+
+  if (/[0-9]/.test(password)) score++;
+
+  if (/[^A-Za-z0-9]/.test(password)) score++;
+
+  let label = "Weak";
+
+  if (score >= 4) {
+    label = "Strong";
+  } else if (score >= 2) {
+    label = "Medium";
+  }
+
+  setPasswordStrength({
+    score,
+    label,
+  });
+};
+
+ const handleChange = (event) => {
+
+  const { name, value } = event.target;
+
+  setFormData({
+    ...formData,
+    [name]: value,
+  });
+
+  if (name === "password") {
+    checkPasswordStrength(value);
+  }
+};
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -55,9 +94,51 @@ const Register = () => {
           <h2 className="text-3xl font-black text-slate-950 dark:text-white">Register</h2>
           <Input name="name" label="Full name" value={formData.name} onChange={handleChange} />
           <Input type="email" name="email" label="Email" value={formData.email} onChange={handleChange} />
-          <Input type="password" name="password" label="Password" value={formData.password} onChange={handleChange} />
+          <div>
+  <Input
+    type="password"
+    name="password"
+    label="Password"
+    value={formData.password}
+    onChange={handleChange}
+  />
 
-          <div className="grid grid-cols-3 gap-3">
+  {formData.password && (
+    <div className="mt-3">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+        <div
+          className={`h-full transition-all duration-300 ${
+            passwordStrength.label === "Weak"
+              ? "bg-red-500 w-1/3"
+              : passwordStrength.label === "Medium"
+              ? "bg-yellow-500 w-2/3"
+              : "bg-green-500 w-full"
+          }`}
+        />
+      </div>
+
+      <p
+        className={`mt-2 text-sm font-semibold ${
+          passwordStrength.label === "Weak"
+            ? "text-red-500"
+            : passwordStrength.label === "Medium"
+            ? "text-yellow-500"
+            : "text-green-500"
+        }`}
+      >
+        Password Strength: {passwordStrength.label}
+      </p>
+
+      <ul className="mt-2 space-y-1 text-xs text-slate-500 dark:text-slate-400">
+        <li>• Minimum 8 characters</li>
+        <li>• One uppercase letter</li>
+        <li>• One number</li>
+        <li>• One special character</li>
+      </ul>
+    </div>
+  )}
+</div>
+          <div className="grid grid-cols-2 gap-3">
             {roles.map((role) => (
               <button
                 key={role.id}
