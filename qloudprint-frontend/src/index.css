@@ -1,0 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+.toast-animate {
+  animation: toastShow 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes toastShow {
+  from {
+    opacity: 0;
+    transform: translateX(60px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* The timeline shrink animation */
+@keyframes shrinkTimeline {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+/* When the parent card is hovered, pause any child animations */
+.toast-card-hover:hover .timeline-bar {
+  animation-play-state: paused !important;
+}

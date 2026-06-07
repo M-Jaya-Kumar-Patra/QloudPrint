@@ -1,0 +1,17 @@
+# frontend
+QloudPrint-frontend/node_modules
+QloudPrint-frontend/dist
+
+# backend
+QloudPrint-backend/target
+
+# env
+.env
+.env.local
+
+# ide
+.idea
+.vscode
+
+# logs
+*.log
