@@ -32,12 +32,7 @@ public class PaymentController {
     ) {
 
         return ResponseEntity.ok(
-                java.util.Map.of(
-                        "success", true,
-                        "payment_status", "SUCCESS",
-                        "message", "Payment verified",
-                        "orderId", orderId
-                )
+                paymentService.verifyPayment(orderId)
         );
     }
 }

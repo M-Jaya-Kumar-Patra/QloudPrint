@@ -7,20 +7,23 @@ const DashboardLayout = ({
 }) => {
 
     return (
-        <div className="flex">
+        <div className="min-h-screen bg-slate-100 text-slate-950 dark:bg-slate-950 dark:text-white lg:flex">
 
             <Sidebar />
 
             <div className="
-                ml-64
+                pb-24
+                lg:ml-72
+                lg:pb-0
                 flex-1
-                bg-gray-100
+                bg-slate-100
+                dark:bg-slate-950
                 min-h-screen
             ">
 
                 <Topbar />
 
-                <div className="p-8">
+                <div className="p-5 lg:p-8">
                     {children}
                 </div>
 

@@ -18,6 +18,8 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import PaymentSuccess from "../pages/payment/PaymentSuccess";
 import OrderHistory from "../pages/customer/OrderHistory";
 import ScanQr from "../pages/shopkeeper/ScanQr";
+import ShopProfile from "../pages/shopkeeper/ShopProfile";
+import PlatformAnalytics from "../pages/admin/PlatformAnalytics";
 
 const AppRoutes = () => {
   return (
@@ -86,6 +88,28 @@ const AppRoutes = () => {
               <DashboardLayout>
                 <UploadOrder />
             </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/shopkeeper/profile"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <ShopProfile />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/analytics"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <PlatformAnalytics />
+              </DashboardLayout>
             </ProtectedRoute>
           }
         />

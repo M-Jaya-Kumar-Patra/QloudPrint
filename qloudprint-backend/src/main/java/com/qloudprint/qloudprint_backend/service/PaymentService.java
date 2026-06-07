@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -124,5 +125,53 @@ public class PaymentService {
                 );
 
         return response.getBody();
+    }
+
+    public Map<String, Object> verifyPayment(String orderId) {
+
+        HttpHeaders headers =
+                new HttpHeaders();
+
+        headers.set(
+                "x-client-id",
+                clientId
+        );
+
+        headers.set(
+                "x-client-secret",
+                clientSecret
+        );
+
+        headers.set(
+                "x-api-version",
+                "2023-08-01"
+        );
+
+        HttpEntity<Void> entity =
+                new HttpEntity<>(headers);
+
+        ResponseEntity<String> response =
+                restTemplate.exchange(
+                        "https://sandbox.cashfree.com/pg/orders/" + orderId,
+                        HttpMethod.GET,
+                        entity,
+                        String.class
+                );
+
+        JSONObject body =
+                new JSONObject(response.getBody());
+
+        String status =
+                body.optString("order_status", "UNKNOWN");
+
+        boolean paid =
+                "PAID".equalsIgnoreCase(status);
+
+        return Map.of(
+                "success", paid,
+                "payment_status", status,
+                "message", paid ? "Payment verified" : "Payment is not completed",
+                "orderId", orderId
+        );
     }
 }

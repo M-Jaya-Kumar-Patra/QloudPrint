@@ -38,7 +38,7 @@ public class AuthService {
                 .name(request.getName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.CUSTOMER)
+                .role(resolveRole(request.getRole()))
                 .build();
 
         userRepository.save(user);
@@ -79,5 +79,18 @@ public class AuthService {
                 token,
                 user.getRole().name()
         );
+    }
+
+    private Role resolveRole(String role) {
+
+        if ("SHOPKEEPER".equalsIgnoreCase(role)) {
+            return Role.SHOPKEEPER;
+        }
+
+        if ("ADMIN".equalsIgnoreCase(role)) {
+            return Role.ADMIN;
+        }
+
+        return Role.CUSTOMER;
     }
 }

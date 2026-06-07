@@ -48,6 +48,14 @@ public class SecurityConfig {
                         ).permitAll()
 
                         .requestMatchers(
+                                "/api/shops/**"
+                        ).authenticated()
+
+                        .requestMatchers(
+                                "/api/admin/**"
+                        ).authenticated()
+
+                        .requestMatchers(
                                 "/api/customer/**"
                         ).authenticated()
 

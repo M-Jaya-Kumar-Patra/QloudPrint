@@ -11,6 +11,12 @@ public class OrderRequest {
 
     private String paperSize;
 
+    private String printSide;
+
+    private String bindingType;
+
+    private String specialInstructions;
+
     private String fileUrl;
 
     private String fileName;
@@ -18,4 +24,6 @@ public class OrderRequest {
     private Integer pageCount;
 
     private String paymentOrderId;
+
+    private Long shopId;
 }

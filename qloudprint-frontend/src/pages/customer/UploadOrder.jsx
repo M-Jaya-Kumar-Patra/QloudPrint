@@ -1,304 +1,476 @@
-import { useState } from "react";
-import { toast } from "../../utils/toastStore";
+import { useMemo, useState } from "react";
+import {
+  AlertCircle,
+  Check,
+  Clock3,
+  Eye,
+  FileText,
+  IndianRupee,
+  Loader2,
+  MapPin,
+  Navigation,
+  Paperclip,
+  Sparkles,
+  UploadCloud
+} from "lucide-react";
 
 import { createPaymentOrder } from "../../api/paymentApi";
+import { tempUpload } from "../../api/orderApi";
+import { getShopRecommendations } from "../../api/shopApi";
+import { toast } from "../../utils/toastStore";
 
-import { createOrder, tempUpload } from "../../api/orderApi";
-
-import { useNavigate } from "react-router-dom";
+const bindingOptions = [
+  { id: "NONE", label: "No binding", sample: "bg-slate-100" },
+  { id: "STAPLE", label: "Staple", sample: "bg-gradient-to-br from-slate-200 to-slate-400" },
+  { id: "SPIRAL", label: "Spiral", sample: "bg-[repeating-linear-gradient(90deg,#0f172a_0_5px,#e2e8f0_5px_12px)]" },
+  { id: "STICK_FILE", label: "Stick file", sample: "bg-gradient-to-r from-amber-200 via-white to-amber-500" },
+  { id: "SOFT_BINDING", label: "Soft binding", sample: "bg-gradient-to-br from-cyan-100 to-blue-300" },
+  { id: "HARD_BINDING", label: "Hard binding", sample: "bg-gradient-to-br from-stone-800 to-stone-500" },
+];
 
 const UploadOrder = () => {
-  const navigate = useNavigate();
+  const [items, setItems] = useState([]);
+  const [activeId, setActiveId] = useState(null);
+  const [location, setLocation] = useState({ latitude: 20.2961, longitude: 85.8245 });
+  const [shops, setShops] = useState([]);
+  const [selectedShop, setSelectedShop] = useState(null);
+  const [loadingUpload, setLoadingUpload] = useState(false);
+  const [findingShops, setFindingShops] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
 
-  const [formData, setFormData] = useState({
-    copies: 1,
-    colorPrint: false,
-    paperSize: "A4",
-  });
+  const activeItem = items.find((item) => item.id === activeId) || items[0];
 
-  const [file, setFile] = useState(null);
-  const [estimate, setEstimate] = useState(null);
-  const [tempFileData, setTempFileData] = useState(null);
+  const totals = useMemo(() => {
+    return items.reduce(
+      (summary, item) => {
+        const pages = Number(item.pageCount || 0) * Number(item.copies || 1);
+        const basePagePrice = item.colorPrint ? 5 : 2;
+        const sideExtra = item.printSide === "DOUBLE_SIDED" ? 0.5 : 0;
+        const bindingCost = bindingPrice(item.bindingType);
+        const cost = pages * (basePagePrice + sideExtra) + bindingCost;
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+        return {
+          pages: summary.pages + pages,
+          cost: summary.cost + cost,
+          minutes: summary.minutes + Math.max(1, Math.ceil(pages / 10)),
+        };
+      },
+      { pages: 0, cost: 0, minutes: 0 },
+    );
+  }, [items]);
 
-    setFormData({
-      ...formData,
-      [name]: type === "checkbox" ? checked : value,
-    });
+  const updateItem = (id, patch) => {
+    setItems((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+    setShops([]);
+    setSelectedShop(null);
   };
 
-  const handleFileChange = async (e) => {
-    try {
-      const selectedFile = e.target.files[0];
+  const handleFiles = async (event) => {
+    const files = Array.from(event.target.files || []);
 
-      setFile(selectedFile);
-
-      const data = new FormData();
-
-      data.append("file", selectedFile);
-
-      const response = await tempUpload(data);
-
-      setTempFileData(response.data);
-
-      toast.success("PDF Uploaded");
-    } catch (error) {
-      console.log(error);
-
-      toast.error("Upload Failed");
-    }
-  };
-  const handleEstimate = () => {
-    if (!tempFileData) {
-      toast.error("Upload PDF First");
-
+    if (!files.length) {
       return;
     }
 
-    const totalPages = tempFileData.pageCount * formData.copies;
+    setLoadingUpload(true);
 
-    const estimatedMinutes = Math.max(1, Math.ceil(totalPages / 10));
-
-    const costPerPage = formData.colorPrint ? 5 : 2;
-
-    const totalCost = totalPages * costPerPage;
-
-    setEstimate({
-      pageCount: tempFileData.pageCount,
-
-      totalPages,
-
-      estimatedMinutes,
-
-      totalCost,
-    });
-
-    toast.success("Estimate Generated");
-  };
-  const handleSubmit = async () => {
     try {
-      const data = new FormData();
+      const uploaded = [];
 
-      data.append("file", file);
+      for (const file of files) {
+        const data = new FormData();
+        data.append("file", file);
 
-      data.append("copies", formData.copies);
+        const response = await tempUpload(data);
 
-      data.append("colorPrint", formData.colorPrint);
+        uploaded.push({
+          id: `${Date.now()}-${file.name}`,
+          fileUrl: response.data.fileUrl,
+          fileName: response.data.fileName,
+          pageCount: response.data.pageCount,
+          copies: 1,
+          paperSize: "A4",
+          printSide: "SINGLE_SIDED",
+          colorPrint: false,
+          bindingType: "NONE",
+          specialInstructions: "",
+        });
+      }
 
-      data.append("paperSize", formData.paperSize);
-
-      const response = await createOrder(data);
-
-      toast.success("Order Uploaded");
+      setItems((current) => [...current, ...uploaded]);
+      setActiveId(uploaded[0]?.id);
+      toast.success(`${uploaded.length} file added`);
     } catch (error) {
-      toast.error("Upload Failed");
+      console.log(error);
+      toast.error("Upload failed");
+    } finally {
+      setLoadingUpload(false);
     }
   };
 
-  const handlePayment = async () => {
+  const handleUseLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Location is not available in this browser");
+      return;
+    }
+
+    setIsLocating(true);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocation({
+          latitude: Number(position.coords.latitude.toFixed(6)),
+          longitude: Number(position.coords.longitude.toFixed(6)),
+        });
+        setIsLocating(false);
+        toast.success("Location added");
+      },
+      () => {
+        setIsLocating(false);
+        toast.error("Could not access location");
+      },
+    );
+  };
+
+  const handleFindShops = async () => {
+    if (!items.length) {
+      toast.error("Upload at least one PDF");
+      return;
+    }
+
+    setFindingShops(true);
+
     try {
-      const response = await createPaymentOrder({
-        amount: estimate.totalCost,
-
-        customerName: "Jaya",
-
-        customerEmail: "test@test.com",
+      const response = await getShopRecommendations({
+        latitude: location.latitude,
+        longitude: location.longitude,
+        pageCount: Math.max(1, totals.pages),
+        copies: 1,
+        colorPrint: items.some((item) => item.colorPrint),
       });
 
-      const paymentSessionId = response.data.payment_session_id;
+      setShops(response.data);
+      setSelectedShop(response.data[0] || null);
+      toast.success(response.data.length ? "Shops ranked live" : "No matching open shops found");
+    } catch (error) {
+      console.log(error);
+      toast.error("Could not find shops");
+    } finally {
+      setFindingShops(false);
+    }
+  };
 
-      const cashfree = window.Cashfree({
-        mode: "sandbox",
+  const vendorTotal = useMemo(() => {
+    if (!selectedShop) {
+      return totals.cost;
+    }
+
+    return items.reduce((total, item) => {
+      const shop = selectedShop.shop;
+      const pages = Number(item.pageCount || 0) * Number(item.copies || 1);
+      const pagePrice = item.colorPrint ? shop.colorPricePerPage : shop.bwPricePerPage;
+      const sideExtra = item.printSide === "DOUBLE_SIDED" ? shop.duplexPricePerPage || 0.5 : 0;
+      const cost = pages * (Number(pagePrice || 0) + Number(sideExtra || 0)) + shopBindingPrice(shop, item.bindingType);
+
+      return total + cost;
+    }, 0);
+  }, [items, selectedShop, totals.cost]);
+
+  const handlePayment = async () => {
+    if (!selectedShop || !items.length) {
+      toast.error("Select a shop first");
+      return;
+    }
+
+    setPaying(true);
+
+    try {
+      const response = await createPaymentOrder({
+        amount: vendorTotal,
+        customerName: "QloudPrint Customer",
+        customerEmail: "customer@qloudprint.local",
       });
 
       localStorage.setItem(
         "pendingOrder",
         JSON.stringify({
-          formData,
-          estimate,
-          tempFileData,
+          items,
+          selectedShop,
+          estimate: {
+            totalPages: totals.pages,
+            totalCost: vendorTotal,
+            estimatedMinutes: selectedShop.waitingMinutes,
+          },
         }),
       );
 
-      cashfree.checkout({
-        paymentSessionId,
-
+      window.Cashfree({ mode: "sandbox" }).checkout({
+        paymentSessionId: response.data.payment_session_id,
         redirectTarget: "_self",
       });
     } catch (error) {
       console.log(error);
-
-      toast.error("Payment Failed");
+      toast.error("Payment failed");
+      setPaying(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-10">
-      <div className="max-w-xl mx-auto bg-white p-8 rounded-xl shadow-lg">
-        <h1 className="text-3xl font-bold mb-6">Upload Print Order</h1>
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          <input
-            type="file"
-            accept=".pdf"
-            onChange={handleFileChange}
-            className="border p-3 rounded-lg"
-          />
-
-          {tempFileData && (
-            <div
-              className="
-            bg-gray-50
-            p-4
-            rounded-xl
-            border
-        "
-            >
-              <p>
-                📄 File:
-                <span className="font-semibold ml-2">
-                  {tempFileData.fileName}
-                </span>
-              </p>
-
-              <p>
-                📑 Pages:
-                <span className="font-semibold ml-2">
-                  {tempFileData.pageCount}
-                </span>
-              </p>
+    <div className="space-y-6">
+      <section className="premium-panel p-6 lg:p-8">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="premium-chip">
+              <Sparkles size={16} />
+              Multi-file smart order
             </div>
-          )}
+            <h1 className="mt-4 text-3xl lg:text-5xl font-black text-slate-950 dark:text-white">
+              Build a print order with item-level control.
+            </h1>
+            <p className="mt-3 max-w-3xl text-slate-500 dark:text-slate-400">
+              Upload multiple PDFs, preview files, set separate print specs, compare vendors, and pay only after the best shop is selected.
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <Metric label="Files" value={items.length} />
+            <Metric label="Pages" value={totals.pages} />
+            <Metric label="Estimate" value={`Rs ${Math.round(vendorTotal)}`} />
+          </div>
+        </div>
+      </section>
 
-          <input
-            type="number"
-            name="copies"
-            value={formData.copies}
-            onChange={handleChange}
-            placeholder="Copies"
-            className="border p-3 rounded-lg"
-          />
-
-          <select
-            name="paperSize"
-            value={formData.paperSize}
-            onChange={handleChange}
-            className="border p-3 rounded-lg"
-          >
-            <option value="A4">A4</option>
-            <option value="A3">A3</option>
-            <option value="Letter">Letter</option>
-          </select>
-
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              name="colorPrint"
-              checked={formData.colorPrint}
-              onChange={handleChange}
-            />
-            Color Print
+      <div className="grid gap-6 xl:grid-cols-[0.42fr_0.58fr]">
+        <section className="premium-card p-5">
+          <label className="flex min-h-48 cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50 text-center transition hover:border-cyan-500 hover:bg-cyan-50 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-cyan-400">
+            {loadingUpload ? <Loader2 className="animate-spin text-cyan-500" size={44} /> : <UploadCloud className="text-cyan-500" size={44} />}
+            <span className="mt-4 text-lg font-black text-slate-950 dark:text-white">Upload PDF files</span>
+            <span className="text-sm text-slate-500">Select one or many files</span>
+            <input type="file" accept=".pdf" multiple onChange={handleFiles} disabled={loadingUpload} className="hidden" />
           </label>
 
-          <button
-            type="button"
-            onClick={handleEstimate}
-            className="
-        bg-blue-600
-        text-white
-        p-3
-        rounded-lg
-        hover:bg-blue-700
-        transition
-    "
-          >
-            Estimate Order
-          </button>
-        </form>
-        {estimate && (
-          <div
-            className="
-            mt-8
-            bg-gray-50
-            border
-            border-gray-200
-            rounded-2xl
-            p-6
-        "
-          >
-            <h2
-              className="
-                text-2xl
-                font-bold
-                mb-4
-            "
-            >
-              Order Summary
-            </h2>
+          <div className="mt-5 space-y-3">
+            {items.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveId(item.id)}
+                className={`w-full rounded-2xl border p-4 text-left transition ${
+                  activeItem?.id === item.id
+                    ? "border-cyan-400 bg-cyan-50 dark:bg-cyan-950/30"
+                    : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950"
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <FileText className="mt-1 text-cyan-500" size={20} />
+                  <div className="min-w-0">
+                    <p className="truncate font-black text-slate-950 dark:text-white">{item.fileName}</p>
+                    <p className="text-sm text-slate-500">{item.pageCount} pages • {item.copies} copies</p>
+                  </div>
+                </div>
+              </button>
+            ))}
 
-            <div
-              className="
-                flex
-                flex-col
-                gap-3
-                text-lg
-            "
-            >
-              <p>
-                📄 Pages:
-                <span className="font-semibold ml-2">{estimate.pageCount}</span>
-              </p>
+            {!items.length && (
+              <div className="rounded-2xl border border-slate-200 p-5 text-center text-slate-500 dark:border-slate-800">
+                Uploaded files will appear here.
+              </div>
+            )}
+          </div>
+        </section>
 
-              <p>
-                🖨 Total Pages:
-                <span className="font-semibold ml-2">
-                  {estimate.totalPages}
-                </span>
-              </p>
+        <section className="premium-card p-5">
+          {activeItem ? (
+            <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+              <div>
+                <div className="mb-3 flex items-center gap-2 font-black text-slate-950 dark:text-white">
+                  <Eye size={18} />
+                  File preview
+                </div>
+                <iframe
+                  title={activeItem.fileName}
+                  src={activeItem.fileUrl}
+                  className="h-[460px] w-full rounded-3xl border border-slate-200 bg-slate-100 dark:border-slate-800"
+                />
+              </div>
 
-              <p>
-                ⏱ ETA:
-                <span className="font-semibold ml-2">
-                  {estimate.estimatedMinutes} mins
-                </span>
-              </p>
+              <div className="space-y-4">
+                <div>
+                  <h2 className="text-2xl font-black text-slate-950 dark:text-white">{activeItem.fileName}</h2>
+                  <p className="text-sm text-slate-500">Configure this document individually.</p>
+                </div>
 
-              <p>
-                💰 Total Cost:
-                <span
-                  className="
-                        font-bold
-                        text-green-600
-                        ml-2
-                    "
-                >
-                  ₹{estimate.totalCost}
-                </span>
-              </p>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <Field label="Copies">
+                    <input className="field-input" type="number" min="1" value={activeItem.copies} onChange={(event) => updateItem(activeItem.id, { copies: event.target.value })} />
+                  </Field>
+                  <Field label="Paper size">
+                    <select className="field-input" value={activeItem.paperSize} onChange={(event) => updateItem(activeItem.id, { paperSize: event.target.value })}>
+                      <option>A4</option>
+                      <option>A3</option>
+                      <option>Letter</option>
+                      <option>Legal</option>
+                    </select>
+                  </Field>
+                  <Field label="Print side">
+                    <select className="field-input" value={activeItem.printSide} onChange={(event) => updateItem(activeItem.id, { printSide: event.target.value })}>
+                      <option value="SINGLE_SIDED">Single sided</option>
+                      <option value="DOUBLE_SIDED">Double sided</option>
+                    </select>
+                  </Field>
+                  <label className="mt-6 flex items-center justify-between rounded-2xl border border-slate-200 p-4 font-bold text-slate-700 dark:border-slate-800 dark:text-slate-200">
+                    Color print
+                    <input type="checkbox" checked={activeItem.colorPrint} onChange={(event) => updateItem(activeItem.id, { colorPrint: event.target.checked })} className="h-5 w-5 accent-cyan-500" />
+                  </label>
+                </div>
+
+                <div>
+                  <p className="mb-3 text-sm font-bold text-slate-600 dark:text-slate-300">Binding</p>
+                  <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
+                    {bindingOptions.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => updateItem(activeItem.id, { bindingType: option.id })}
+                        className={`rounded-2xl border p-3 text-left transition ${
+                          activeItem.bindingType === option.id
+                            ? "border-cyan-500 bg-cyan-50 dark:bg-cyan-950/30"
+                            : "border-slate-200 dark:border-slate-800"
+                        }`}
+                      >
+                        <div className={`h-16 rounded-xl ${option.sample}`} />
+                        <div className="mt-2 flex items-center justify-between text-sm font-black text-slate-950 dark:text-white">
+                          {option.label}
+                          {activeItem.bindingType === option.id && <Check size={16} className="text-cyan-500" />}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <Field label="Extra printing instructions">
+                  <textarea
+                    className="field-input min-h-28"
+                    value={activeItem.specialInstructions}
+                    onChange={(event) => updateItem(activeItem.id, { specialInstructions: event.target.value })}
+                    placeholder="Example: print pages 1-5 only, keep first page color, call before printing..."
+                  />
+                </Field>
+              </div>
             </div>
+          ) : (
+            <div className="flex min-h-[520px] flex-col items-center justify-center text-center">
+              <Paperclip className="text-slate-300" size={54} />
+              <h2 className="mt-4 text-2xl font-black text-slate-950 dark:text-white">Upload a PDF to begin</h2>
+              <p className="mt-2 text-slate-500">Preview and print options appear here.</p>
+            </div>
+          )}
+        </section>
+      </div>
 
-            <button
-              onClick={handlePayment}
-              className="
-        mt-6
-        w-full
-        bg-green-600
-        text-white
-        p-3
-        rounded-xl
-        hover:bg-green-700
-        transition
-    "
-            >
-              Proceed To Payment
-            </button>
+      <section className="premium-card p-5">
+        <div className="grid gap-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+          <Field label="Customer latitude">
+            <input className="field-input" value={location.latitude} onChange={(event) => setLocation((current) => ({ ...current, latitude: event.target.value }))} />
+          </Field>
+          <Field label="Customer longitude">
+            <input className="field-input" value={location.longitude} onChange={(event) => setLocation((current) => ({ ...current, longitude: event.target.value }))} />
+          </Field>
+          <button onClick={handleUseLocation} disabled={isLocating} className="premium-button secondary">
+            {isLocating ? <Loader2 className="animate-spin" size={18} /> : <Navigation size={18} />}
+            Use GPS
+          </button>
+        </div>
+
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+          <button onClick={handleFindShops} disabled={!items.length || findingShops} className="premium-button flex-1">
+            {findingShops ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />}
+            Find best shops
+          </button>
+          <button onClick={handlePayment} disabled={!selectedShop || paying} className="premium-button success flex-1">
+            {paying ? <Loader2 className="animate-spin" size={18} /> : <IndianRupee size={18} />}
+            Pay Rs {Math.round(vendorTotal)}
+          </button>
+        </div>
+
+        {!items.length && (
+          <div className="mt-4 flex items-center gap-2 rounded-2xl bg-amber-50 p-4 text-sm font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+            <AlertCircle size={18} />
+            Upload files before searching shops.
           </div>
         )}
-      </div>
+      </section>
+
+      {shops.length > 0 && (
+        <section className="grid gap-4 lg:grid-cols-3">
+          {shops.map((item) => (
+            <button
+              key={item.shop.id}
+              onClick={() => setSelectedShop(item)}
+              className={`premium-card p-5 text-left transition hover:-translate-y-1 ${
+                selectedShop?.shop?.id === item.shop.id ? "ring-2 ring-cyan-400" : ""
+              }`}
+            >
+              {item.shop.shopPhotoUrl ? (
+                <img src={item.shop.shopPhotoUrl} alt={item.shop.name} className="h-36 w-full rounded-3xl object-cover" />
+              ) : (
+                <div className="h-36 rounded-3xl bg-gradient-to-br from-cyan-200 via-white to-emerald-200 dark:from-cyan-950 dark:via-slate-900 dark:to-emerald-950" />
+              )}
+              <div className="mt-4 flex items-center justify-between">
+                <div className="premium-chip">{item.badge}</div>
+                <span className="font-black text-cyan-500">{item.recommendationScore}%</span>
+              </div>
+              <h3 className="mt-3 text-xl font-black text-slate-950 dark:text-white">{item.shop.name}</h3>
+              <p className="mt-1 text-sm text-slate-500">{item.shop.address}</p>
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <Mini icon={<MapPin size={15} />} label="Km" value={item.distanceKm} />
+                <Mini icon={<Clock3 size={15} />} label="Wait" value={`${item.waitingMinutes}m`} />
+                <Mini icon={<IndianRupee size={15} />} label="Total" value={`Rs ${Math.round(selectedShop?.shop?.id === item.shop.id ? vendorTotal : item.estimatedPrice)}`} />
+              </div>
+            </button>
+          ))}
+        </section>
+      )}
     </div>
   );
 };
+
+const bindingPrice = (type) => {
+  const map = { NONE: 0, STAPLE: 5, SPIRAL: 30, STICK_FILE: 15, HARD_BINDING: 80, SOFT_BINDING: 45 };
+  return map[type] || 0;
+};
+
+const shopBindingPrice = (shop, type) => {
+  const map = {
+    NONE: 0,
+    STAPLE: shop.staplePrice,
+    SPIRAL: shop.spiralBindingPrice,
+    STICK_FILE: shop.stickFilePrice,
+    HARD_BINDING: shop.hardBindingPrice,
+    SOFT_BINDING: shop.softBindingPrice,
+  };
+  return Number(map[type] || 0);
+};
+
+const Field = ({ label, children }) => (
+  <label className="block">
+    <span className="text-sm font-bold text-slate-600 dark:text-slate-300">{label}</span>
+    <div className="mt-2">{children}</div>
+  </label>
+);
+
+const Metric = ({ label, value }) => (
+  <div className="rounded-2xl bg-white/70 p-4 text-center shadow-sm dark:bg-slate-900/70">
+    <p className="text-xl font-black text-slate-950 dark:text-white">{value}</p>
+    <p className="text-xs font-bold text-slate-500">{label}</p>
+  </div>
+);
+
+const Mini = ({ icon, label, value }) => (
+  <div className="rounded-2xl bg-slate-50 p-3 text-center dark:bg-slate-950">
+    <div className="mx-auto flex h-7 w-7 items-center justify-center rounded-xl bg-white text-cyan-500 dark:bg-slate-900">{icon}</div>
+    <p className="mt-1 text-sm font-black text-slate-950 dark:text-white">{value}</p>
+    <p className="text-[11px] text-slate-500">{label}</p>
+  </div>
+);
 
 export default UploadOrder;

@@ -33,6 +33,15 @@ public class PrintOrder {
 
     private String paperSize;
 
+    private String printSide;
+
+    private String bindingType;
+
+    private Double bindingCost;
+
+    @Column(length = 1000)
+    private String specialInstructions;
+
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
 
@@ -45,6 +54,14 @@ public class PrintOrder {
     })
 
     private User user;
+
+    @ManyToOne
+    @JoinColumn(name = "shop_id")
+    @JsonIgnoreProperties({
+            "hibernateLazyInitializer",
+            "handler"
+    })
+    private Shop shop;
 
     private Integer estimatedMinutes;
 

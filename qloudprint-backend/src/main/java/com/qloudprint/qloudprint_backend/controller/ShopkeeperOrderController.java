@@ -4,6 +4,7 @@ import com.qloudprint.qloudprint_backend.dto.UpdateOrderStatusRequest;
 import com.qloudprint.qloudprint_backend.entity.PrintOrder;
 import com.qloudprint.qloudprint_backend.service.OrderService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,9 +17,9 @@ public class ShopkeeperOrderController {
     private final OrderService orderService;
 
     @GetMapping
-    public List<PrintOrder> getAllOrders() {
+    public List<PrintOrder> getAllOrders(Authentication authentication) {
 
-        return orderService.getAllOrders();
+        return orderService.getShopOrders(authentication.getName());
     }
 
     @PutMapping("/{orderId}/status")
@@ -34,9 +35,9 @@ public class ShopkeeperOrderController {
     }
 
     @GetMapping("/optimized-queue")
-    public List<PrintOrder> getOptimizedQueue() {
+    public List<PrintOrder> getOptimizedQueue(Authentication authentication) {
 
-        return orderService.getOptimizedQueue();
+        return orderService.getOptimizedQueue(authentication.getName());
     }
 
     @GetMapping("/verify/{orderCode}")

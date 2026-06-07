@@ -1,13 +1,10 @@
-import axios from "axios";
-
-const BASE_URL =
-    "http://localhost:8080/api/payment";
+import api from "../services/api";
 
 export const createPaymentOrder =
     async (data) => {
 
-        return axios.post(
-            `${BASE_URL}/create-order`,
+        return api.post(
+            "/payment/create-order",
             data
         );
     };
@@ -15,15 +12,8 @@ export const createPaymentOrder =
 export const verifyPayment =
     async (orderId) => {
 
-        return axios.get(
+        return api.get(
 
-            `${BASE_URL}/verify/${orderId}`,
-
-            {
-                headers: {
-                    Authorization:
-                        `Bearer ${localStorage.getItem("token")}`
-                }
-            }
+            `/payment/verify/${orderId}`
         );
     };
