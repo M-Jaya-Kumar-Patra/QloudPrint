@@ -203,33 +203,33 @@ const ShopkeeperDashboard = () => {
 
             <section className="grid gap-4">
                 {filteredOrders.map((order) => (
-                    <div key={order.id} onClick={() => openDocument(order.fileUrl)} className="premium-card cursor-pointer p-5 transition hover:-translate-y-1">
-                        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                            <div>
+                    <div key={order.id} onClick={() => openDocument(order.fileUrl)} className="premium-card min-w-0 cursor-pointer overflow-hidden p-4 transition hover:-translate-y-1 sm:p-5">
+                        <div className="flex min-w-0 flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                            <div className="min-w-0 flex-1">
                                 <div className="flex items-start gap-3">
-                                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40">
+                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40">
                                         <FileText size={22} />
                                     </div>
-                                    <div>
+                                    <div className="min-w-0 flex-1">
                                         <p className="text-sm font-bold text-cyan-500">{order.orderCode}</p>
-                                        <h2 className="text-xl font-black text-slate-950 dark:text-white">{order.fileName}</h2>
-                                        <p className="text-sm text-slate-500">{order.user?.name || "Customer"} • {order.paperSize} • {order.bindingType || "NONE"}</p>
+                                        <h2 className="break-words text-xl font-black leading-tight text-slate-950 dark:text-white">{order.fileName}</h2>
+                                        <p className="mt-1 break-words text-sm text-slate-500">{order.user?.name || "Customer"} - {order.paperSize} - {order.bindingType || "NONE"}</p>
                                     </div>
                                 </div>
-                                <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 dark:bg-slate-950 dark:text-slate-300">
-                                    <p><strong>Instructions:</strong> {order.specialInstructions || "None"}</p>
+                                <div className="mt-4 min-w-0 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 dark:bg-slate-950 dark:text-slate-300">
+                                    <p className="break-words"><strong>Instructions:</strong> {order.specialInstructions || "None"}</p>
                                     {order.status === "COMPLETED" && (
                                         <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-                                            <p><strong>Payout:</strong> {order.payoutStatus || "Not started"}</p>
+                                            <p className="break-words"><strong>Payout:</strong> {order.payoutStatus || "Not started"}</p>
                                             <p><strong>Shop payout:</strong> Rs {order.shopPayoutAmount || 0}</p>
                                             <p><strong>Platform fee:</strong> Rs {order.platformFee || 0}</p>
                                             {order.payoutStatus === "MANUALLY_SETTLED" && (
                                                 <>
-                                                    <p><strong>Paid by:</strong> {order.manualPayoutMode}</p>
-                                                    <p><strong>Reference:</strong> {order.manualPayoutReferenceId}</p>
+                                                    <p className="break-words"><strong>Paid by:</strong> {order.manualPayoutMode}</p>
+                                                    <p className="break-words"><strong>Reference:</strong> {order.manualPayoutReferenceId}</p>
                                                 </>
                                             )}
-                                            {order.payoutFailureReason && <p className="text-red-500"><strong>Reason:</strong> {order.payoutFailureReason}</p>}
+                                            {order.payoutFailureReason && <p className="break-words text-red-500"><strong>Reason:</strong> {order.payoutFailureReason}</p>}
                                             {order.payoutStatus === "FAILED" && (
                                                 <button type="button" onClick={(event) => handleRetryPayout(event, order.id)} className="premium-button secondary mt-3 min-h-0 px-3 py-2 text-sm">
                                                     <RefreshCcw size={16} />
@@ -244,14 +244,16 @@ const ShopkeeperDashboard = () => {
                                             {order.refundFailureReason && <p><strong>Issue:</strong> {order.refundFailureReason}</p>}
                                         </div>
                                     )}
-                                    <button type="button" onClick={(event) => { event.stopPropagation(); openDocument(order.fileUrl); }} className="mt-2 inline-flex items-center gap-2 font-black text-cyan-600">Open document</button>
-                                    <button type="button" onClick={(event) => { event.stopPropagation(); downloadDocument(order.fileUrl, order.fileName); }} className="ml-4 mt-2 inline-flex items-center gap-2 font-black text-cyan-600">
-                                        <Download size={16} />
-                                        Download
-                                    </button>
+                                    <div className="mt-3 flex flex-wrap gap-4">
+                                        <button type="button" onClick={(event) => { event.stopPropagation(); openDocument(order.fileUrl); }} className="inline-flex items-center gap-2 font-black text-cyan-600">Open document</button>
+                                        <button type="button" onClick={(event) => { event.stopPropagation(); downloadDocument(order.fileUrl, order.fileName); }} className="inline-flex items-center gap-2 font-black text-cyan-600">
+                                            <Download size={16} />
+                                            Download
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="lg:w-72">
+                            <div className="min-w-0 lg:w-72 lg:shrink-0">
                                 <StatusPill status={order.status} />
                                 <select onClick={(event) => event.stopPropagation()} onChange={(event) => handleStatusChange(order.id, event.target.value)} value={order.status} className="field-input mt-3">
                                     {statuses.map((status) => <option key={status} value={status}>{status}</option>)}
