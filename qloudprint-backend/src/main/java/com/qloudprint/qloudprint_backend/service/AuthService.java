@@ -11,9 +11,10 @@ import com.qloudprint.qloudprint_backend.exception.BadRequestException;
 import com.qloudprint.qloudprint_backend.exception.ResourceNotFoundException;
 import com.qloudprint.qloudprint_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Bean;
+import org.springframework.mail.MailException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.qloudprint.qloudprint_backend.security.JwtService;
 
 
@@ -38,6 +39,7 @@ public class AuthService {
 
     private final Random random = new Random();
 
+    @Transactional
     public Map<String, String> register(RegisterRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -58,14 +60,18 @@ public class AuthService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        userRepository.save(user);
+        userRepository.saveAndFlush(user);
 
-        emailService.sendOtpEmail(
-                user.getEmail(),
-                "Verify your QloudPrint email",
-                otp,
-                "email verification"
-        );
+        try {
+            emailService.sendOtpEmail(
+                    user.getEmail(),
+                    "Verify your QloudPrint email",
+                    otp,
+                    "email verification"
+            );
+        } catch (MailException exception) {
+            throw new BadRequestException("Could not send OTP email. Please check the SMTP configuration and try again.");
+        }
 
         return Map.of(
                 "message", "Account created. Verify your email with the OTP sent to your email."
@@ -143,7 +149,7 @@ public class AuthService {
         String otp =
                 refreshOtp(user);
 
-        emailService.sendOtpEmail(
+        sendOtpOrFail(
                 user.getEmail(),
                 "Verify your QloudPrint email",
                 otp,
@@ -180,7 +186,7 @@ public class AuthService {
         String otp =
                 refreshOtp(user);
 
-        emailService.sendOtpEmail(
+        sendOtpOrFail(
                 user.getEmail(),
                 "Reset your QloudPrint password",
                 otp,
@@ -260,5 +266,24 @@ public class AuthService {
     private String generateOtp() {
 
         return String.valueOf(100000 + random.nextInt(900000));
+    }
+
+    private void sendOtpOrFail(
+            String email,
+            String subject,
+            String otp,
+            String purpose
+    ) {
+
+        try {
+            emailService.sendOtpEmail(
+                    email,
+                    subject,
+                    otp,
+                    purpose
+            );
+        } catch (MailException exception) {
+            throw new BadRequestException("Could not send OTP email. Please check the SMTP configuration and try again.");
+        }
     }
 }
