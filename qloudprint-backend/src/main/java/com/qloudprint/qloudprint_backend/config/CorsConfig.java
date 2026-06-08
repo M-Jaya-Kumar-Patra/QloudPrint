@@ -21,7 +21,13 @@ public class CorsConfig {
 
         config.setAllowCredentials(true);
 
-        config.addAllowedOrigin(frontendUrl);
+        for (String origin : frontendUrl.split(",")) {
+            String trimmedOrigin = origin.trim();
+
+            if (!trimmedOrigin.isBlank()) {
+                config.addAllowedOrigin(trimmedOrigin);
+            }
+        }
 
         config.addAllowedHeader("*");
 

@@ -4,7 +4,7 @@ const baseUrl = (import.meta.env.VITE_BASE_URL || "").replace(/\/$/, "");
 
 const api = axios.create({
     baseURL: `${baseUrl}/api`,
-    timeout: 20000,
+    timeout: 120000,
 });
 
 api.interceptors.request.use((config) => {
@@ -26,7 +26,7 @@ api.interceptors.response.use(
                 ...error,
                 response: {
                     data: {
-                        message: "Server is taking too long to respond. Please try again in a minute.",
+                        message: "Server is waking up and taking too long to respond. Please try again in a minute.",
                     },
                 },
             });
@@ -58,3 +58,13 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+export const warmBackend = () => {
+    if (!baseUrl) {
+        return;
+    }
+
+    axios
+        .get(`${baseUrl}/api/health`, { timeout: 120000 })
+        .catch(() => {});
+};

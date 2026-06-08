@@ -46,6 +46,10 @@ public class SecurityConfig {
                         ).permitAll()
 
                         .requestMatchers(
+                                "/api/health"
+                        ).permitAll()
+
+                        .requestMatchers(
                                 "/api/payment/**"
                         ).permitAll()
 
