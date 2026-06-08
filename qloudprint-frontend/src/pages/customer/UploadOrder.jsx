@@ -192,14 +192,11 @@ const UploadOrder = () => {
       return;
     }
 
-    if (!window.Razorpay) {
-      toast.error("Razorpay checkout is still loading. Please try again.");
-      return;
-    }
-
     setPaying(true);
 
     try {
+      await loadRazorpayCheckout();
+
       const response = await createPaymentOrder({
         amount: vendorTotal,
         customerName: "QloudPrint Customer",
@@ -567,3 +564,27 @@ const Mini = ({ icon, label, value }) => (
 );
 
 export default UploadOrder;
+
+const loadRazorpayCheckout = () => {
+  if (window.Razorpay) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    const existingScript = document.querySelector("script[data-razorpay-checkout]");
+
+    if (existingScript) {
+      existingScript.addEventListener("load", resolve, { once: true });
+      existingScript.addEventListener("error", reject, { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.dataset.razorpayCheckout = "true";
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("Could not load Razorpay checkout"));
+    document.body.appendChild(script);
+  });
+};
