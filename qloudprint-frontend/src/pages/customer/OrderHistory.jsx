@@ -163,17 +163,17 @@ const OrderHistory = () => {
                 {order.refundFailureReason && <p className="text-red-500"><strong>Refund issue:</strong> {order.refundFailureReason}</p>}
               </div>
 
-              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-                <button onClick={(event) => { event.stopPropagation(); setSelectedOrder(order); }} className="premium-button secondary flex-1">
+              <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-3">
+                <button onClick={(event) => { event.stopPropagation(); setSelectedOrder(order); }} className="premium-button secondary min-h-0 justify-center px-3 py-3 text-sm">
                   <QrCode size={18} />
                   View QR
                 </button>
-                <button onClick={(event) => { event.stopPropagation(); downloadDocument(order.fileUrl, order.fileName); }} className="premium-button secondary flex-1">
+                <button onClick={(event) => { event.stopPropagation(); downloadDocument(order.fileUrl, order.fileName); }} className="premium-button secondary min-h-0 justify-center px-3 py-3 text-sm">
                   <ExternalLink size={18} />
                   Download
                 </button>
                 {order.shop?.phone && (
-                  <a href={`tel:${order.shop.phone}`} onClick={(event) => event.stopPropagation()} className="premium-button secondary flex-1">
+                  <a href={`tel:${order.shop.phone}`} onClick={(event) => event.stopPropagation()} className="premium-button secondary min-h-0 justify-center px-3 py-3 text-sm">
                     <Phone size={18} />
                     Call
                   </a>
@@ -184,23 +184,23 @@ const OrderHistory = () => {
                     target="_blank"
                     rel="noreferrer"
                     onClick={(event) => event.stopPropagation()}
-                    className="premium-button secondary flex-1"
+                    className="premium-button secondary min-h-0 justify-center px-3 py-3 text-sm"
                   >
                     <Navigation size={18} />
                     Map
                   </a>
                 )}
-                <button onClick={(event) => { event.stopPropagation(); downloadInvoicePdf(order); }} className="premium-button flex-1">
+                <button onClick={(event) => { event.stopPropagation(); downloadInvoicePdf(order); }} className="premium-button min-h-0 justify-center px-3 py-3 text-sm">
                   <Download size={18} />
                   Invoice
                 </button>
                 {order.status === "COMPLETED" && !order.customerRating && (
-                  <button onClick={(event) => { event.stopPropagation(); setRatingOrder(order); }} className="premium-button success flex-1">
+                  <button onClick={(event) => { event.stopPropagation(); setRatingOrder(order); }} className="premium-button success min-h-0 justify-center px-3 py-3 text-sm">
                     Rate shop
                   </button>
                 )}
                 {canCancel(order) && (
-                  <button onClick={(event) => handleCancelOrder(event, order)} className="premium-button secondary flex-1 text-red-500">
+                  <button onClick={(event) => handleCancelOrder(event, order)} className="premium-button secondary min-h-0 justify-center px-3 py-3 text-sm text-red-500">
                     Cancel
                   </button>
                 )}
