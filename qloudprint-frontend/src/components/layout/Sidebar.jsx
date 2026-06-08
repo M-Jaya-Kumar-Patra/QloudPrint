@@ -1,5 +1,6 @@
 import {
     BarChart3,
+    Banknote,
     History,
     LayoutDashboard,
     ListOrdered,
@@ -51,6 +52,7 @@ const Sidebar = () => {
 
     const adminLinks = [
         { to: "/admin/analytics", label: "Platform Analytics", icon: BarChart3 },
+        { to: "/admin/payouts", label: "Manual Payouts", icon: Banknote },
         { to: "/account", label: "Profile", icon: UserCircle },
     ];
 

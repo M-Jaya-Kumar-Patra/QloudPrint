@@ -1,5 +1,6 @@
 package com.qloudprint.qloudprint_backend.controller;
 
+import com.qloudprint.qloudprint_backend.dto.ManualPayoutRequest;
 import com.qloudprint.qloudprint_backend.dto.PlatformSettingsRequest;
 import com.qloudprint.qloudprint_backend.entity.OrderStatus;
 import com.qloudprint.qloudprint_backend.entity.Role;
@@ -7,9 +8,12 @@ import com.qloudprint.qloudprint_backend.repository.PrintOrderRepository;
 import com.qloudprint.qloudprint_backend.repository.ShopRepository;
 import com.qloudprint.qloudprint_backend.repository.UserRepository;
 import com.qloudprint.qloudprint_backend.service.PlatformSettingsService;
+import com.qloudprint.qloudprint_backend.service.PayoutService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,6 +35,8 @@ public class AdminAnalyticsController {
     private final PrintOrderRepository orderRepository;
 
     private final PlatformSettingsService platformSettingsService;
+
+    private final PayoutService payoutService;
 
     @GetMapping
     public Map<String, Object> analytics() {
@@ -59,11 +65,16 @@ public class AdminAnalyticsController {
                 .filter(order -> order.getPayoutStatus() == null ||
                         "RECEIVED".equalsIgnoreCase(order.getPayoutStatus()) ||
                         "QUEUED".equalsIgnoreCase(order.getPayoutStatus()) ||
-                        "PENDING".equalsIgnoreCase(order.getPayoutStatus()))
+                        "PENDING".equalsIgnoreCase(order.getPayoutStatus()) ||
+                        "PENDING_MANUAL_SETTLEMENT".equalsIgnoreCase(order.getPayoutStatus()))
                 .count();
 
         long failedPayouts = orders.stream()
                 .filter(order -> "FAILED".equalsIgnoreCase(order.getPayoutStatus()))
+                .count();
+
+        long manuallySettledPayouts = orders.stream()
+                .filter(order -> "MANUALLY_SETTLED".equalsIgnoreCase(order.getPayoutStatus()))
                 .count();
 
         long refundFailures = orders.stream()
@@ -94,6 +105,7 @@ public class AdminAnalyticsController {
         response.put("shopPayoutTotal", shopPayoutTotal);
         response.put("pendingPayouts", pendingPayouts);
         response.put("failedPayouts", failedPayouts);
+        response.put("manuallySettledPayouts", manuallySettledPayouts);
         response.put("refundedAmount", refundedAmount);
         response.put("refundFailures", refundFailures);
         response.put("cancelledOrders", statusCounts.getOrDefault(OrderStatus.CANCELLED.name(), 0L));
@@ -116,5 +128,25 @@ public class AdminAnalyticsController {
     ) {
 
         return platformSettingsService.updateSettings(request);
+    }
+
+    @GetMapping("/payouts")
+    public Object payouts() {
+
+        return orderRepository.findByStatus(OrderStatus.COMPLETED);
+    }
+
+    @PostMapping("/payouts/{orderId}/settle")
+    public Object settlePayout(
+            @PathVariable Long orderId,
+            @Valid @RequestBody ManualPayoutRequest request
+    ) {
+
+        return payoutService.markManualSettlement(
+                orderId,
+                request.getPaymentMode(),
+                request.getReferenceId(),
+                request.getNote()
+        );
     }
 }

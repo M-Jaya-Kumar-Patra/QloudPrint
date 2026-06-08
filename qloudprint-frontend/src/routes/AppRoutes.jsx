@@ -16,6 +16,7 @@ const OrderHistory = lazy(() => import("../pages/customer/OrderHistory"));
 const ScanQr = lazy(() => import("../pages/shopkeeper/ScanQr"));
 const ShopProfile = lazy(() => import("../pages/shopkeeper/ShopProfile"));
 const PlatformAnalytics = lazy(() => import("../pages/admin/PlatformAnalytics"));
+const ManualPayouts = lazy(() => import("../pages/admin/ManualPayouts"));
 const AccountProfile = lazy(() => import("../pages/account/AccountProfile"));
 const ShopPublicProfile = lazy(() => import("../pages/customer/ShopPublicProfile"));
 
@@ -76,6 +77,7 @@ const AppRoutes = () => {
           <Route path="/customer/shops/:shopId" element={<ProtectedDashboardRoute><ShopPublicProfile /></ProtectedDashboardRoute>} />
           <Route path="/account" element={<ProtectedDashboardRoute><AccountProfile /></ProtectedDashboardRoute>} />
           <Route path="/admin/analytics" element={<ProtectedDashboardRoute><PlatformAnalytics /></ProtectedDashboardRoute>} />
+          <Route path="/admin/payouts" element={<ProtectedDashboardRoute><ManualPayouts /></ProtectedDashboardRoute>} />
           <Route path="/shopkeeper/scan-qr" element={<ScanQr />} />
         </Routes>
       </Suspense>

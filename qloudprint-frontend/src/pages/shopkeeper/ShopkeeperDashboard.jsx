@@ -223,6 +223,12 @@ const ShopkeeperDashboard = () => {
                                             <p><strong>Payout:</strong> {order.payoutStatus || "Not started"}</p>
                                             <p><strong>Shop payout:</strong> Rs {order.shopPayoutAmount || 0}</p>
                                             <p><strong>Platform fee:</strong> Rs {order.platformFee || 0}</p>
+                                            {order.payoutStatus === "MANUALLY_SETTLED" && (
+                                                <>
+                                                    <p><strong>Paid by:</strong> {order.manualPayoutMode}</p>
+                                                    <p><strong>Reference:</strong> {order.manualPayoutReferenceId}</p>
+                                                </>
+                                            )}
                                             {order.payoutFailureReason && <p className="text-red-500"><strong>Reason:</strong> {order.payoutFailureReason}</p>}
                                             {order.payoutStatus === "FAILED" && (
                                                 <button type="button" onClick={(event) => handleRetryPayout(event, order.id)} className="premium-button secondary mt-3 min-h-0 px-3 py-2 text-sm">

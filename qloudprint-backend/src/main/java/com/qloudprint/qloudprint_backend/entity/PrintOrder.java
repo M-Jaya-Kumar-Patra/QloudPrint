@@ -5,6 +5,8 @@ import lombok.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.time.LocalDateTime;
+
 
 @Entity
 @Table(name = "orders")
@@ -94,6 +96,15 @@ public class PrintOrder {
 
     @Column(length = 1000)
     private String payoutFailureReason;
+
+    private String manualPayoutMode;
+
+    private String manualPayoutReferenceId;
+
+    @Column(length = 1000)
+    private String manualPayoutNote;
+
+    private LocalDateTime manualPayoutSettledAt;
 
     private String cancelledBy;
 

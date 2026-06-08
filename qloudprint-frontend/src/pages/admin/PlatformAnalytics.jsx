@@ -77,6 +77,7 @@ const PlatformAnalytics = () => {
                 <Metric icon={<ShoppingBag />} label="Cancelled" value={analytics?.cancelledOrders || 0} />
                 <Metric icon={<ShoppingBag />} label="Pending payouts" value={analytics?.pendingPayouts || 0} />
                 <Metric icon={<ShoppingBag />} label="Failed payouts" value={analytics?.failedPayouts || 0} />
+                <Metric icon={<ShoppingBag />} label="Settled payouts" value={analytics?.manuallySettledPayouts || 0} />
                 <Metric icon={<RefreshCcw />} label="Refund failures" value={analytics?.refundFailures || 0} />
                 <Metric icon={<Percent />} label="Platform fee" value={`${analytics?.platformSettings?.platformFeePercent || 0}%`} />
             </div>

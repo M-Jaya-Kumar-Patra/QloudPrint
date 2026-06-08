@@ -1,12 +1,14 @@
 package com.qloudprint.qloudprint_backend.service;
 
 import com.qloudprint.qloudprint_backend.entity.PrintOrder;
+import com.qloudprint.qloudprint_backend.entity.OrderStatus;
 import com.qloudprint.qloudprint_backend.repository.PrintOrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -52,7 +54,37 @@ public class PayoutService {
         order.setPayoutTransferId(transferId);
         order.setPayoutCfTransferId(null);
         order.setPayoutStatus("PENDING_MANUAL_SETTLEMENT");
-        order.setPayoutFailureReason("Settle this amount from the Razorpay merchant balance or enable RazorpayX/Route for automatic payouts.");
+        order.setPayoutFailureReason("Admin must manually settle this amount to the shop bank account or UPI ID.");
+
+        return orderRepository.save(order);
+    }
+
+    public PrintOrder markManualSettlement(
+            Long orderId,
+            String paymentMode,
+            String referenceId,
+            String note
+    ) {
+
+        PrintOrder order =
+                orderRepository.findById(orderId)
+                        .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        if (order.getStatus() != OrderStatus.COMPLETED) {
+            throw new RuntimeException("Only completed orders can be settled");
+        }
+
+        if (order.getShopPayoutAmount() == null || order.getPlatformFee() == null) {
+            order =
+                    initiatePayoutForOrder(order);
+        }
+
+        order.setPayoutStatus("MANUALLY_SETTLED");
+        order.setPayoutFailureReason(null);
+        order.setManualPayoutMode(paymentMode);
+        order.setManualPayoutReferenceId(referenceId);
+        order.setManualPayoutNote(note);
+        order.setManualPayoutSettledAt(LocalDateTime.now());
 
         return orderRepository.save(order);
     }

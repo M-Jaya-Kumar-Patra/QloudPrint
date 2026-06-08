@@ -18,6 +18,7 @@ public interface PrintOrderRepository
     List<PrintOrder> findByShopAndStatusInOrderByPriorityScoreAsc(Shop shop, List<OrderStatus> statuses);
     List<PrintOrder> findByStatusInOrderByPriorityScoreAsc(List<OrderStatus> statuses);
     List<PrintOrder> findByStatus(OrderStatus status);
+    List<PrintOrder> findByStatusAndPayoutStatusIn(OrderStatus status, List<String> payoutStatuses);
     List<PrintOrder> findAllByOrderByPriorityScoreAsc();
     List<PrintOrder> findByShopOrderByPriorityScoreAsc(Shop shop);
     Optional<PrintOrder> findTopByUserOrderByIdDesc(User user);
