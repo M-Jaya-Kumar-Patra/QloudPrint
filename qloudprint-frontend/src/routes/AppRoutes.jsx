@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 import DashboardLayout from "../layouts/DashboardLayout";
 
@@ -49,7 +49,6 @@ const ProtectedDashboardRoute = ({ children }) => (
 
 const AppRoutes = () => {
   return (
-    <BrowserRouter>
       <Suspense fallback={<RouteLoader />}>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -81,7 +80,6 @@ const AppRoutes = () => {
           <Route path="/shopkeeper/scan-qr" element={<ScanQr />} />
         </Routes>
       </Suspense>
-    </BrowserRouter>
   );
 };
 
