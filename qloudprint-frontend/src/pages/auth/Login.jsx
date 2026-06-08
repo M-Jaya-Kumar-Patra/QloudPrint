@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, LogIn } from "lucide-react";
 
@@ -14,15 +14,6 @@ const Login = () => {
   const { login } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-
-    if (params.get("session") === "expired" || sessionStorage.getItem("sessionExpired") === "true") {
-      toast.warning("Session expired. Please login again.");
-      sessionStorage.removeItem("sessionExpired");
-    }
-  }, []);
 
   const handleChange = (event) => {
     setFormData({ ...formData, [event.target.name]: event.target.value });
