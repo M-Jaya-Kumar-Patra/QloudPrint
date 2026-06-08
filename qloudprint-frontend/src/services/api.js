@@ -4,6 +4,7 @@ const baseUrl = (import.meta.env.VITE_BASE_URL || "").replace(/\/$/, "");
 
 const api = axios.create({
     baseURL: `${baseUrl}/api`,
+    timeout: 20000,
 });
 
 api.interceptors.request.use((config) => {
@@ -20,6 +21,28 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     (response) => response,
     (error) => {
+        if (error.code === "ECONNABORTED") {
+            return Promise.reject({
+                ...error,
+                response: {
+                    data: {
+                        message: "Server is taking too long to respond. Please try again in a minute.",
+                    },
+                },
+            });
+        }
+
+        if (!error.response) {
+            return Promise.reject({
+                ...error,
+                response: {
+                    data: {
+                        message: "Could not connect to the server. Please check the backend URL and CORS settings.",
+                    },
+                },
+            });
+        }
+
         if (error.response?.status === 401) {
             localStorage.removeItem("token");
             localStorage.removeItem("role");
