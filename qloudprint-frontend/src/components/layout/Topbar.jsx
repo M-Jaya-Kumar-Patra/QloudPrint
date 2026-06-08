@@ -1,6 +1,9 @@
-import { Bell, Search } from "lucide-react";
+import { Bell, Menu, Search } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ThemeToggle from "../common/ThemeToggle";
+import BrandLogo from "../common/BrandLogo";
+
+
 
 const Topbar = () => {
     const role = localStorage.getItem("role") || "CUSTOMER";
@@ -38,9 +41,19 @@ const Topbar = () => {
         ">
 
             <div>
-                <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-500">{role.toLowerCase()} workspace</p>
-                <h1 className="text-2xl font-black text-slate-950 dark:text-white">Command Center</h1>
-            </div>
+    <div className="lg:hidden">
+        <BrandLogo />
+    </div>
+
+    <div className="hidden lg:block">
+        <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-500">
+            {role.toLowerCase()} workspace
+        </p>
+        <h1 className="text-2xl font-black text-slate-950 dark:text-white">
+            Command Center
+        </h1>
+    </div>
+</div>
 
             <div className="
                 flex
@@ -56,9 +69,12 @@ const Topbar = () => {
                     <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-emerald-400" />
                 </button>
                 <ThemeToggle />
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 font-black text-white dark:bg-white dark:text-slate-950">
-                    Q
-                </div>
+                <button
+    onClick={() => window.dispatchEvent(new Event("open-right-drawer"))}
+    className="flex lg:hidden h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+>
+    <Menu size={22} />
+</button>
             </div>
 
         </div>

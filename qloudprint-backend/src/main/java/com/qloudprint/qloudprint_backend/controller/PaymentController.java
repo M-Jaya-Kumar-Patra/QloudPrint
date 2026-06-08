@@ -2,6 +2,7 @@ package com.qloudprint.qloudprint_backend.controller;
 
 
 import com.qloudprint.qloudprint_backend.dto.PaymentRequest;
+import com.qloudprint.qloudprint_backend.dto.RazorpayVerifyRequest;
 
 import com.qloudprint.qloudprint_backend.service.PaymentService;
 
@@ -18,12 +19,13 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PostMapping("/create-order")
-    public String createOrder(
+    public ResponseEntity<?> createOrder(
             @RequestBody PaymentRequest request
     ) throws Exception {
 
-        return paymentService
-                .createPaymentOrder(request);
+        return ResponseEntity.ok(
+                paymentService.createPaymentOrder(request)
+        );
     }
 
     @GetMapping("/verify/{orderId}")
@@ -33,6 +35,16 @@ public class PaymentController {
 
         return ResponseEntity.ok(
                 paymentService.verifyPayment(orderId)
+        );
+    }
+
+    @PostMapping("/verify")
+    public ResponseEntity<?> verifyRazorpayPayment(
+            @RequestBody RazorpayVerifyRequest request
+    ) {
+
+        return ResponseEntity.ok(
+                paymentService.verifyRazorpayPayment(request)
         );
     }
 }

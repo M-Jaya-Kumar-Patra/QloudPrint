@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { QRCode } from "react-qr-code";
 import { CheckCircle2, Loader2, ReceiptText, XCircle } from "lucide-react";
 
-import { verifyPayment } from "../../api/paymentApi";
+import { verifyRazorpayPayment } from "../../api/paymentApi";
 import { createOrder } from "../../api/orderApi";
 import { toast } from "../../utils/toastStore";
 
@@ -24,10 +24,12 @@ const PaymentSuccess = () => {
         const verify = async () => {
             try {
                 const params = new URLSearchParams(window.location.search);
-                const orderId = params.get("order_id");
+                const orderId = params.get("razorpay_order_id");
+                const paymentId = params.get("razorpay_payment_id");
+                const signature = params.get("razorpay_signature");
                 const pendingOrder = JSON.parse(localStorage.getItem("pendingOrder"));
 
-                if (!orderId) {
+                if (!orderId || !paymentId || !signature) {
                     setErrorMessage("Payment reference missing. Please try again.");
                     toast.error("Payment reference missing");
                     return;
@@ -39,7 +41,11 @@ const PaymentSuccess = () => {
                     return;
                 }
 
-                const verifyResponse = await verifyPayment(orderId);
+                const verifyResponse = await verifyRazorpayPayment({
+                    razorpayOrderId: orderId,
+                    razorpayPaymentId: paymentId,
+                    razorpaySignature: signature,
+                });
 
                 if (!verifyResponse.data.success) {
                     setErrorMessage(verifyResponse.data.message || "Payment verification failed");

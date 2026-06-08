@@ -100,6 +100,10 @@ public class Shop {
 
     private String gstNumber;
 
+    private String cashfreeBeneficiaryId;
+
+    private String cashfreeBeneficiaryStatus;
+
     @ManyToOne
     @JoinColumn(name = "owner_id")
     @JsonIgnoreProperties({

@@ -6,10 +6,12 @@ import {
     LogOut,
     QrCode,
     Store,
-    Upload
+    Upload,
+    UserCircle,
+    X
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useContext } from "react";
+import { useContext, useEffect, useState } from "react";
 
 import { AuthContext } from "../../context/AuthContext";
 import BrandLogo from "../common/BrandLogo";
@@ -19,11 +21,24 @@ const Sidebar = () => {
     const location = useLocation();
     const { logout } = useContext(AuthContext);
     const role = localStorage.getItem("role");
+    const [open, setOpen] = useState(false);
+
+    useEffect(() => {
+    const openDrawer = () => setOpen(true);
+
+    window.addEventListener("open-right-drawer", openDrawer);
+
+    return () => {
+        window.removeEventListener("open-right-drawer", openDrawer);
+    };
+}, []);
+
 
     const customerLinks = [
         { to: "/customer/dashboard", label: "Dashboard", icon: LayoutDashboard },
         { to: "/upload", label: "New Order", icon: Upload },
         { to: "/customer/orders", label: "Orders & Invoices", icon: History },
+        { to: "/account", label: "Profile", icon: UserCircle },
     ];
 
     const shopLinks = [
@@ -31,10 +46,12 @@ const Sidebar = () => {
         { to: "/shopkeeper/profile", label: "Shop Settings", icon: Store },
         { to: "/shopkeeper/optimized-queue", label: "Live Queue", icon: ListOrdered },
         { to: "/shopkeeper/scan-qr", label: "Pickup QR", icon: QrCode },
+        { to: "/account", label: "Profile", icon: UserCircle },
     ];
 
     const adminLinks = [
         { to: "/admin/analytics", label: "Platform Analytics", icon: BarChart3 },
+        { to: "/account", label: "Profile", icon: UserCircle },
     ];
 
     const links = role === "SHOPKEEPER" ? shopLinks : role === "ADMIN" ? adminLinks : customerLinks;
@@ -50,14 +67,17 @@ const Sidebar = () => {
         navigate("/");
     };
 
-    return (
-        <aside className="fixed bottom-0 left-0 top-auto z-40 flex h-20 w-full flex-row items-center justify-between border-t border-slate-200 bg-white/95 p-3 shadow-xl shadow-slate-200/50 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/95 dark:shadow-black/20 lg:top-0 lg:h-screen lg:w-72 lg:flex-col lg:items-stretch lg:border-r lg:border-t-0 lg:p-5">
+    const navContent = (
+        <>
             <div>
-                <div className="hidden px-2 py-3 lg:block">
+                <div className="flex items-center justify-between px-2 py-3">
                     <BrandLogo />
+                    <button onClick={() => setOpen(false)} className="rounded-2xl border border-slate-200 p-2 text-slate-600 dark:border-slate-800 dark:text-slate-300 lg:hidden">
+                        <X size={20} />
+                    </button>
                 </div>
 
-                <nav className="flex gap-1 overflow-x-auto lg:mt-8 lg:block lg:space-y-2 lg:overflow-visible">
+                <nav className="mt-8 space-y-2">
                     {links.map((link) => {
                         const Icon = link.icon;
                         const active = location.pathname === link.to;
@@ -66,7 +86,8 @@ const Sidebar = () => {
                             <Link
                                 key={link.to}
                                 to={link.to}
-                                className={`group flex min-w-max items-center gap-2 rounded-2xl px-3 py-3 text-sm font-bold transition lg:gap-3 lg:px-4 ${
+                                onClick={() => setOpen(false)}
+                                className={`group flex items-center gap-3 rounded-2xl px-4 py-3 font-bold transition ${
                                     active
                                         ? "bg-slate-950 text-white shadow-lg shadow-slate-900/20 dark:bg-white dark:text-slate-950"
                                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white"
@@ -80,8 +101,8 @@ const Sidebar = () => {
                 </nav>
             </div>
 
-            <div className="flex items-center gap-2 lg:block lg:space-y-3">
-                <div className="hidden rounded-3xl border border-cyan-200 bg-cyan-50 p-4 dark:border-cyan-900 dark:bg-cyan-950/30 lg:block">
+            <div className="space-y-3">
+                <div className="rounded-3xl border border-cyan-200 bg-cyan-50 p-4 dark:border-cyan-900 dark:bg-cyan-950/30">
                     <p className="text-sm font-black text-slate-950 dark:text-white">Realtime enabled</p>
                     <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
                         Orders, status changes, and queues update through live events.
@@ -89,13 +110,25 @@ const Sidebar = () => {
                 </div>
                 <button
                     onClick={handleLogout}
-                    className="flex items-center gap-2 rounded-2xl px-3 py-3 text-sm font-bold text-red-500 transition hover:bg-red-50 dark:hover:bg-red-950/30 lg:w-full lg:gap-3 lg:px-4"
+                    className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 font-bold text-red-500 transition hover:bg-red-50 dark:hover:bg-red-950/30"
                 >
                     <LogOut size={20} />
                     Logout
                 </button>
             </div>
-        </aside>
+        </>
+    );
+
+    return (
+        <>
+            
+
+            {open && <button aria-label="Close menu" onClick={() => setOpen(false)} className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm lg:hidden" />}
+
+            <aside className={`fixed right-0 top-0 z-50 flex h-screen w-72 flex-col justify-between border-l border-slate-200 bg-white/95 p-5 shadow-xl shadow-slate-200/50 backdrop-blur-xl transition-transform dark:border-slate-800 dark:bg-slate-950/95 dark:shadow-black/20 lg:left-0 lg:right-auto lg:translate-x-0 lg:border-l-0 lg:border-r ${open ? "translate-x-0" : "translate-x-full lg:translate-x-0"}`}>
+               {navContent}
+            </aside>
+        </>
     );
 };
 

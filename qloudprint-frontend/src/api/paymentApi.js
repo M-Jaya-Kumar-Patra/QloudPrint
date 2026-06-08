@@ -17,3 +17,12 @@ export const verifyPayment =
             `/payment/verify/${orderId}`
         );
     };
+
+export const verifyRazorpayPayment =
+    async (data) => {
+
+        return api.post(
+            "/payment/verify",
+            data
+        );
+    };

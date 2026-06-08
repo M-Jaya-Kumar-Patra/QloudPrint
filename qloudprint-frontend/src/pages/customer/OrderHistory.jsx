@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { QRCode } from "react-qr-code";
-import { Download, ExternalLink, FileText, Loader2, QrCode, ReceiptText, Search } from "lucide-react";
+import { Download, ExternalLink, FileText, Loader2, Navigation, Phone, QrCode, ReceiptText, Search } from "lucide-react";
 
-import { getCustomerOrders } from "../../api/orderApi";
+import { cancelCustomerOrder, getCustomerOrders, rateOrder } from "../../api/orderApi";
 import { downloadDocument, downloadInvoicePdf, openDocument } from "../../utils/downloads";
+import { toast } from "../../utils/toastStore";
 
 const OrderHistory = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [ratingOrder, setRatingOrder] = useState(null);
+  const [ratingValue, setRatingValue] = useState(5);
+  const [review, setReview] = useState("");
   const [query, setQuery] = useState("");
   const location = useLocation();
 
@@ -25,10 +29,55 @@ const OrderHistory = () => {
     try {
       const response = await getCustomerOrders();
       setOrders(response.data);
+      const unratedCompleted = response.data.find((order) => order.status === "COMPLETED" && !order.customerRating);
+      if (unratedCompleted) {
+        setRatingOrder(unratedCompleted);
+      }
     } catch (error) {
       console.log(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const submitRating = async () => {
+    if (!ratingOrder) {
+      return;
+    }
+
+    try {
+      const response = await rateOrder(ratingOrder.id, {
+        rating: Number(ratingValue),
+        review,
+      });
+
+      setOrders((current) => current.map((order) => (order.id === ratingOrder.id ? response.data : order)));
+      setRatingOrder(null);
+      setReview("");
+      setRatingValue(5);
+      toast.success("Thanks for rating the shop");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Could not submit rating");
+    }
+  };
+
+  const canCancel = (order) => ["PENDING", "PAYMENT_CONFIRMED", "QUEUED"].includes(order.status);
+
+  const handleCancelOrder = async (event, order) => {
+    event.stopPropagation();
+
+    const reason = window.prompt("Why are you cancelling this order?");
+
+    if (reason === null) {
+      return;
+    }
+
+    try {
+      const response = await cancelCustomerOrder(order.id, reason);
+      setOrders((current) => current.map((item) => (item.id === order.id ? response.data : item)));
+      toast.success("Order cancelled. Refund has been initiated.");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Could not cancel order");
     }
   };
 
@@ -110,6 +159,8 @@ const OrderHistory = () => {
                 <p><strong>Side:</strong> {order.printSide || "SINGLE_SIDED"}</p>
                 <p><strong>Binding:</strong> {order.bindingType || "NONE"}</p>
                 <p><strong>Instructions:</strong> {order.specialInstructions || "None"}</p>
+                {order.refundStatus && <p><strong>Refund:</strong> {order.refundStatus} {order.refundAmount ? `(Rs ${order.refundAmount})` : ""}</p>}
+                {order.refundFailureReason && <p className="text-red-500"><strong>Refund issue:</strong> {order.refundFailureReason}</p>}
               </div>
 
               <div className="mt-5 flex flex-col gap-3 sm:flex-row">
@@ -121,10 +172,38 @@ const OrderHistory = () => {
                   <ExternalLink size={18} />
                   Download
                 </button>
+                {order.shop?.phone && (
+                  <a href={`tel:${order.shop.phone}`} onClick={(event) => event.stopPropagation()} className="premium-button secondary flex-1">
+                    <Phone size={18} />
+                    Call
+                  </a>
+                )}
+                {order.shop?.latitude && order.shop?.longitude && (
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${order.shop.latitude},${order.shop.longitude}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(event) => event.stopPropagation()}
+                    className="premium-button secondary flex-1"
+                  >
+                    <Navigation size={18} />
+                    Map
+                  </a>
+                )}
                 <button onClick={(event) => { event.stopPropagation(); downloadInvoicePdf(order); }} className="premium-button flex-1">
                   <Download size={18} />
                   Invoice
                 </button>
+                {order.status === "COMPLETED" && !order.customerRating && (
+                  <button onClick={(event) => { event.stopPropagation(); setRatingOrder(order); }} className="premium-button success flex-1">
+                    Rate shop
+                  </button>
+                )}
+                {canCancel(order) && (
+                  <button onClick={(event) => handleCancelOrder(event, order)} className="premium-button secondary flex-1 text-red-500">
+                    Cancel
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -142,6 +221,33 @@ const OrderHistory = () => {
             <button onClick={() => setSelectedOrder(null)} className="premium-button mt-5 w-full secondary">
               Close
             </button>
+          </div>
+        </div>
+      )}
+
+      {ratingOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur">
+          <div className="premium-card w-full max-w-md p-7">
+            <h2 className="text-2xl font-black text-slate-950 dark:text-white">Rate your shop experience</h2>
+            <p className="mt-2 text-sm text-slate-500">{ratingOrder.shop?.name || "Selected shop"} - {ratingOrder.fileName}</p>
+            <label className="mt-5 block">
+              <span className="text-sm font-bold text-slate-600 dark:text-slate-300">Rating</span>
+              <select value={ratingValue} onChange={(event) => setRatingValue(event.target.value)} className="field-input mt-2">
+                <option value="5">5 - Excellent</option>
+                <option value="4">4 - Good</option>
+                <option value="3">3 - Average</option>
+                <option value="2">2 - Poor</option>
+                <option value="1">1 - Bad</option>
+              </select>
+            </label>
+            <label className="mt-4 block">
+              <span className="text-sm font-bold text-slate-600 dark:text-slate-300">Review</span>
+              <textarea value={review} onChange={(event) => setReview(event.target.value)} className="field-input mt-2 min-h-28" placeholder="Share your experience..." />
+            </label>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <button onClick={() => setRatingOrder(null)} className="premium-button secondary">Later</button>
+              <button onClick={submitRating} className="premium-button success">Submit rating</button>
+            </div>
           </div>
         </div>
       )}

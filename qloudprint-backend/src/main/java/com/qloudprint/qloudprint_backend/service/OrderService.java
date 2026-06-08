@@ -1,7 +1,9 @@
 package com.qloudprint.qloudprint_backend.service;
 
+import com.qloudprint.qloudprint_backend.dto.CancelOrderRequest;
 import com.qloudprint.qloudprint_backend.dto.OrderEstimateResponse;
 import com.qloudprint.qloudprint_backend.dto.OrderRequest;
+import com.qloudprint.qloudprint_backend.dto.RateOrderRequest;
 import com.qloudprint.qloudprint_backend.dto.TempUploadResponse;
 import com.qloudprint.qloudprint_backend.dto.UpdateOrderStatusRequest;
 import com.qloudprint.qloudprint_backend.entity.*;
@@ -37,6 +39,8 @@ public class OrderService {
     private final com.qloudprint.qloudprint_backend.repository.ShopRepository shopRepository;
 
     private final PaymentService paymentService;
+
+    private final PayoutService payoutService;
 
     public PrintOrder createOrder(
             OrderRequest request,
@@ -99,6 +103,13 @@ public class OrderService {
                 );
 
         totalCost += bindingCost;
+
+        double amountPaid =
+                Double.parseDouble(String.valueOf(paymentStatus.getOrDefault("amountPaid", 0)));
+
+        if (amountPaid + 0.01 < totalCost) {
+            throw new RuntimeException("Paid amount is lower than the calculated order total");
+        }
 
         int priorityScore =
                 estimatedMinutes;
@@ -219,6 +230,11 @@ public class OrderService {
         PrintOrder updatedOrder =
                 orderRepository.save(order);
 
+        if (updatedOrder.getStatus() == OrderStatus.COMPLETED) {
+            updatedOrder =
+                    payoutService.initiatePayoutForOrder(updatedOrder);
+        }
+
         messagingTemplate.convertAndSend(
                 "/topic/orders",
                 updatedOrder
@@ -232,6 +248,153 @@ public class OrderService {
         }
 
         return updatedOrder;
+    }
+
+    public PrintOrder cancelCustomerOrder(
+            Long orderId,
+            CancelOrderRequest request,
+            String email
+    ) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
+
+        PrintOrder order = orderRepository.findById(orderId)
+                .orElseThrow(() ->
+                        new RuntimeException("Order not found"));
+
+        if (order.getUser() == null || order.getUser().getId() != user.getId()) {
+            throw new RuntimeException("You can cancel only your own orders");
+        }
+
+        return cancelAndRefund(order, "CUSTOMER", request == null ? null : request.getReason());
+    }
+
+    public PrintOrder cancelShopOrder(
+            Long orderId,
+            CancelOrderRequest request,
+            String ownerEmail
+    ) {
+
+        User owner = userRepository.findByEmail(ownerEmail)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
+
+        PrintOrder order = orderRepository.findById(orderId)
+                .orElseThrow(() ->
+                        new RuntimeException("Order not found"));
+
+        if (order.getShop() == null || order.getShop().getOwner() == null ||
+                order.getShop().getOwner().getId() != owner.getId()) {
+            throw new RuntimeException("You can cancel only your shop orders");
+        }
+
+        return cancelAndRefund(order, "SHOPKEEPER", request == null ? null : request.getReason());
+    }
+
+    private PrintOrder cancelAndRefund(
+            PrintOrder order,
+            String cancelledBy,
+            String reason
+    ) {
+
+        if (!canCancel(order)) {
+            throw new RuntimeException("Order cannot be cancelled after printing has started");
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        order.setCancelledBy(cancelledBy);
+        order.setCancellationReason(reason);
+
+        PrintOrder cancelledOrder =
+                orderRepository.save(order);
+
+        initiateRefund(cancelledOrder);
+
+        messagingTemplate.convertAndSend(
+                "/topic/orders",
+                cancelledOrder
+        );
+
+        if (cancelledOrder.getShop() != null) {
+            messagingTemplate.convertAndSend(
+                    "/topic/shop/" + cancelledOrder.getShop().getId() + "/orders",
+                    cancelledOrder
+            );
+        }
+
+        return orderRepository.findById(cancelledOrder.getId())
+                .orElse(cancelledOrder);
+    }
+
+    private boolean canCancel(PrintOrder order) {
+
+        return order.getStatus() == OrderStatus.PENDING ||
+                order.getStatus() == OrderStatus.PAYMENT_CONFIRMED ||
+                order.getStatus() == OrderStatus.QUEUED;
+    }
+
+    private void initiateRefund(PrintOrder order) {
+
+        if (order.getPaymentOrderId() == null || order.getPaymentOrderId().isBlank()) {
+            order.setRefundStatus("FAILED");
+            order.setRefundFailureReason("Payment order id missing");
+            orderRepository.save(order);
+            return;
+        }
+
+        if (order.getRefundStatus() != null && !"FAILED".equalsIgnoreCase(order.getRefundStatus())) {
+            return;
+        }
+
+        String refundId =
+                ("QLD_REFUND_" + order.getId()).replaceAll("[^A-Za-z0-9_]", "_");
+
+        try {
+            Map<String, Object> refund =
+                    paymentService.createRefund(
+                            order.getPaymentOrderId(),
+                            order.getTotalCost(),
+                            refundId,
+                            "Refund for cancelled QloudPrint order " + order.getOrderCode()
+                    );
+
+            order.setRefundId(String.valueOf(refund.get("refundId")));
+            order.setCfRefundId(String.valueOf(refund.get("cfRefundId")));
+            order.setRefundStatus(String.valueOf(refund.get("refundStatus")));
+            order.setRefundAmount(Double.valueOf(String.valueOf(refund.get("refundAmount"))));
+            order.setRefundFailureReason(null);
+        } catch (Exception exception) {
+            order.setRefundId(refundId);
+            order.setRefundStatus("FAILED");
+            order.setRefundAmount(order.getTotalCost());
+            order.setRefundFailureReason(exception.getMessage());
+        }
+
+        orderRepository.save(order);
+    }
+
+    public PrintOrder retryPayout(Long orderId, String ownerEmail) {
+
+        User owner = userRepository.findByEmail(ownerEmail)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
+
+        PrintOrder order = orderRepository.findById(orderId)
+                .orElseThrow(() ->
+                        new RuntimeException("Order not found"));
+
+        if (order.getShop() == null || order.getShop().getOwner() == null ||
+                order.getShop().getOwner().getId() != owner.getId()) {
+            throw new RuntimeException("You can retry payout only for your shop orders");
+        }
+
+        if (order.getStatus() != OrderStatus.COMPLETED) {
+            throw new RuntimeException("Order must be completed before payout");
+        }
+
+        return payoutService.initiatePayoutForOrder(order);
     }
 
     public List<PrintOrder> getOptimizedQueue() {
@@ -394,6 +557,56 @@ public class OrderService {
                         new RuntimeException(
                                 "Order not found"
                         ));
+    }
+
+    public PrintOrder rateOrder(
+            Long orderId,
+            RateOrderRequest request,
+            String email
+    ) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
+
+        PrintOrder order = orderRepository.findById(orderId)
+                .orElseThrow(() ->
+                        new RuntimeException("Order not found"));
+
+        if (order.getUser() == null || order.getUser().getId() != user.getId()) {
+            throw new RuntimeException("You can rate only your own orders");
+        }
+
+        if (order.getStatus() != OrderStatus.COMPLETED) {
+            throw new RuntimeException("Order must be completed before rating");
+        }
+
+        if (order.getCustomerRating() != null) {
+            throw new RuntimeException("This order has already been rated");
+        }
+
+        order.setCustomerRating(request.getRating());
+        order.setCustomerReview(request.getReview());
+
+        Shop shop =
+                order.getShop();
+
+        if (shop != null) {
+            int existingCount =
+                    shop.getTotalRatings() == null ? 0 : shop.getTotalRatings();
+
+            double existingRating =
+                    shop.getRating() == null ? 0.0 : shop.getRating();
+
+            double newRating =
+                    ((existingRating * existingCount) + request.getRating()) / (existingCount + 1);
+
+            shop.setRating(Math.round(newRating * 10.0) / 10.0);
+            shop.setTotalRatings(existingCount + 1);
+            shopRepository.save(shop);
+        }
+
+        return orderRepository.save(order);
     }
 
 

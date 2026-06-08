@@ -4,6 +4,8 @@ import com.qloudprint.qloudprint_backend.entity.Shop;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 @Builder
 public class ShopRecommendationResponse {
@@ -19,4 +21,8 @@ public class ShopRecommendationResponse {
     private Double recommendationScore;
 
     private String badge;
+
+    private List<String> tags;
+
+    private Boolean lastOrderedShop;
 }

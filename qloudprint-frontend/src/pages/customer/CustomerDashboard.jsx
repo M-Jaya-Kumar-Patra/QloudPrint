@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { BellRing, Clock3, Download, FileText, IndianRupee, Loader2, PackageCheck, Printer, Search } from "lucide-react";
+import { BellRing, Clock3, Download, FileText, IndianRupee, Loader2, Navigation, PackageCheck, Phone, Printer, Search } from "lucide-react";
 
 import { getCustomerOrders } from "../../api/orderApi";
 import stompClient from "../../services/websocket";
@@ -13,6 +13,7 @@ const CustomerDashboard = () => {
     const [notification, setNotification] = useState(null);
     const [query, setQuery] = useState("");
     const location = useLocation();
+    const navigate = useNavigate();
 
     const fetchOrders = async () => {
         try {
@@ -75,6 +76,9 @@ const CustomerDashboard = () => {
                     <BellRing className="text-cyan-500" size={30} />
                     <h3 className="mt-3 text-lg font-black text-slate-950 dark:text-white">Order status updated</h3>
                     <p className="mt-1 text-sm text-slate-500">{notification.fileName} is now {notification.status}.</p>
+                    {notification.status === "COMPLETED" && !notification.customerRating && (
+                        <button onClick={() => navigate("/customer/orders")} className="premium-button success mt-4 w-full">Rate shop experience</button>
+                    )}
                     <button onClick={() => setNotification(null)} className="premium-button secondary mt-4 w-full">Dismiss</button>
                 </div>
             )}
@@ -132,6 +136,24 @@ const CustomerDashboard = () => {
                                     <Download size={16} />
                                     Download
                                 </button>
+                                {order.shop?.phone && (
+                                    <a href={`tel:${order.shop.phone}`} onClick={(event) => event.stopPropagation()} className="premium-button secondary min-h-0 px-3 py-2 text-sm">
+                                        <Phone size={16} />
+                                        Call
+                                    </a>
+                                )}
+                                {order.shop?.latitude && order.shop?.longitude && (
+                                    <a
+                                        href={`https://www.google.com/maps/search/?api=1&query=${order.shop.latitude},${order.shop.longitude}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        onClick={(event) => event.stopPropagation()}
+                                        className="premium-button secondary min-h-0 px-3 py-2 text-sm"
+                                    >
+                                        <Navigation size={16} />
+                                        Map
+                                    </a>
+                                )}
                             </div>
                         </div>
                     </div>

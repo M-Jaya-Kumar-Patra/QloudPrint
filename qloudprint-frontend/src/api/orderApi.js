@@ -82,3 +82,19 @@ export const tempUpload =
             `/shopkeeper/orders/verify/${orderCode}`
         );
     };
+
+export const rateOrder = async (orderId, data) => {
+    return api.post(`/customer/orders/${orderId}/rating`, data);
+};
+
+export const retryOrderPayout = async (orderId) => {
+    return api.post(`/shopkeeper/orders/${orderId}/payout/retry`);
+};
+
+export const cancelCustomerOrder = async (orderId, reason = "") => {
+    return api.post(`/customer/orders/${orderId}/cancel`, { reason });
+};
+
+export const cancelShopkeeperOrder = async (orderId, reason = "") => {
+    return api.post(`/shopkeeper/orders/${orderId}/cancel`, { reason });
+};

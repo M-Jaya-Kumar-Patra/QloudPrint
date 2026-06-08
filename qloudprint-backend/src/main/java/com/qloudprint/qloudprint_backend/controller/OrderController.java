@@ -1,7 +1,9 @@
 package com.qloudprint.qloudprint_backend.controller;
 
+import com.qloudprint.qloudprint_backend.dto.CancelOrderRequest;
 import com.qloudprint.qloudprint_backend.dto.OrderEstimateResponse;
 import com.qloudprint.qloudprint_backend.dto.OrderRequest;
+import com.qloudprint.qloudprint_backend.dto.RateOrderRequest;
 import com.qloudprint.qloudprint_backend.dto.TempUploadResponse;
 import com.qloudprint.qloudprint_backend.entity.PrintOrder;
 import com.qloudprint.qloudprint_backend.service.OrderService;
@@ -77,5 +79,33 @@ public class OrderController {
 
         return orderService
                 .tempUpload(file);
+    }
+
+    @PostMapping("/{orderId}/rating")
+    public PrintOrder rateOrder(
+            @PathVariable Long orderId,
+            @RequestBody RateOrderRequest request,
+            Authentication authentication
+    ) {
+
+        return orderService.rateOrder(
+                orderId,
+                request,
+                authentication.getName()
+        );
+    }
+
+    @PostMapping("/{orderId}/cancel")
+    public PrintOrder cancelOrder(
+            @PathVariable Long orderId,
+            @RequestBody(required = false) CancelOrderRequest request,
+            Authentication authentication
+    ) {
+
+        return orderService.cancelCustomerOrder(
+                orderId,
+                request,
+                authentication.getName()
+        );
     }
 }

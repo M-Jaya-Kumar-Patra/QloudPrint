@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AlertCircle,
   Check,
   Clock3,
+  Phone,
   Eye,
   FileText,
   IndianRupee,
@@ -11,6 +13,7 @@ import {
   Navigation,
   Paperclip,
   Sparkles,
+  Store,
   UploadCloud
 } from "lucide-react";
 
@@ -29,9 +32,10 @@ const bindingOptions = [
 ];
 
 const UploadOrder = () => {
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [activeId, setActiveId] = useState(null);
-  const [location, setLocation] = useState({ latitude: 20.2961, longitude: 85.8245 });
+  const [location, setLocation] = useState({ latitude: "", longitude: "" });
   const [shops, setShops] = useState([]);
   const [selectedShop, setSelectedShop] = useState(null);
   const [loadingUpload, setLoadingUpload] = useState(false);
@@ -139,12 +143,17 @@ const UploadOrder = () => {
       return;
     }
 
+    if (!location.latitude || !location.longitude) {
+      toast.error("Enter your location or use GPS first");
+      return;
+    }
+
     setFindingShops(true);
 
     try {
       const response = await getShopRecommendations({
-        latitude: location.latitude,
-        longitude: location.longitude,
+        latitude: Number(location.latitude),
+        longitude: Number(location.longitude),
         pageCount: Math.max(1, totals.pages),
         copies: 1,
         colorPrint: items.some((item) => item.colorPrint),
@@ -183,6 +192,11 @@ const UploadOrder = () => {
       return;
     }
 
+    if (!window.Razorpay) {
+      toast.error("Razorpay checkout is still loading. Please try again.");
+      return;
+    }
+
     setPaying(true);
 
     try {
@@ -205,10 +219,40 @@ const UploadOrder = () => {
         }),
       );
 
-      window.Cashfree({ mode: "sandbox" }).checkout({
-        paymentSessionId: response.data.payment_session_id,
-        redirectTarget: "_self",
+      const paymentOrder = response.data;
+
+      const razorpay = new window.Razorpay({
+        key: paymentOrder.key_id,
+        amount: paymentOrder.amount,
+        currency: paymentOrder.currency || "INR",
+        name: "QloudPrint",
+        description: "Print order payment",
+        order_id: paymentOrder.id,
+        prefill: {
+          name: "QloudPrint Customer",
+          email: "customer@qloudprint.local",
+        },
+        theme: {
+          color: "#22d3ee",
+        },
+        handler: (paymentResponse) => {
+          const params = new URLSearchParams({
+            razorpay_order_id: paymentResponse.razorpay_order_id,
+            razorpay_payment_id: paymentResponse.razorpay_payment_id,
+            razorpay_signature: paymentResponse.razorpay_signature,
+          });
+
+          navigate(`/payment-success?${params.toString()}`);
+        },
+        modal: {
+          ondismiss: () => {
+            setPaying(false);
+            toast.error("Payment was not completed");
+          },
+        },
       });
+
+      razorpay.open();
     } catch (error) {
       console.log(error);
       toast.error("Payment failed");
@@ -370,10 +414,10 @@ const UploadOrder = () => {
       <section className="premium-card p-5">
         <div className="grid gap-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
           <Field label="Customer latitude">
-            <input className="field-input" value={location.latitude} onChange={(event) => setLocation((current) => ({ ...current, latitude: event.target.value }))} />
+            <input className="field-input" value={location.latitude} placeholder="Enter latitude or use GPS" onChange={(event) => setLocation((current) => ({ ...current, latitude: event.target.value }))} />
           </Field>
           <Field label="Customer longitude">
-            <input className="field-input" value={location.longitude} onChange={(event) => setLocation((current) => ({ ...current, longitude: event.target.value }))} />
+            <input className="field-input" value={location.longitude} placeholder="Enter longitude or use GPS" onChange={(event) => setLocation((current) => ({ ...current, longitude: event.target.value }))} />
           </Field>
           <button onClick={handleUseLocation} disabled={isLocating} className="premium-button secondary">
             {isLocating ? <Loader2 className="animate-spin" size={18} /> : <Navigation size={18} />}
@@ -382,7 +426,7 @@ const UploadOrder = () => {
         </div>
 
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-          <button onClick={handleFindShops} disabled={!items.length || findingShops} className="premium-button flex-1">
+          <button onClick={handleFindShops} disabled={!items.length || !location.latitude || !location.longitude || findingShops} className="premium-button flex-1">
             {findingShops ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />}
             Find best shops
           </button>
@@ -403,13 +447,18 @@ const UploadOrder = () => {
       {shops.length > 0 && (
         <section className="grid gap-4 lg:grid-cols-3">
           {shops.map((item) => (
-            <button
+            <div
               key={item.shop.id}
               onClick={() => setSelectedShop(item)}
-              className={`premium-card p-5 text-left transition hover:-translate-y-1 ${
+              className={`premium-card cursor-pointer p-5 text-left transition hover:-translate-y-1 ${
                 selectedShop?.shop?.id === item.shop.id ? "ring-2 ring-cyan-400" : ""
               }`}
             >
+              {selectedShop?.shop?.id === item.shop.id && (
+                <div className="mb-3 inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                  SELECTED
+                </div>
+              )}
               {item.shop.shopPhotoUrl ? (
                 <img src={item.shop.shopPhotoUrl} alt={item.shop.name} className="h-36 w-full rounded-3xl object-cover" />
               ) : (
@@ -419,6 +468,15 @@ const UploadOrder = () => {
                 <div className="premium-chip">{item.badge}</div>
                 <span className="font-black text-cyan-500">{item.recommendationScore}%</span>
               </div>
+              {Boolean(item.tags?.length) && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {item.tags.map((tag) => (
+                    <span key={tag} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
               <h3 className="mt-3 text-xl font-black text-slate-950 dark:text-white">{item.shop.name}</h3>
               <p className="mt-1 text-sm text-slate-500">{item.shop.address}</p>
               <div className="mt-4 grid grid-cols-3 gap-2">
@@ -426,7 +484,42 @@ const UploadOrder = () => {
                 <Mini icon={<Clock3 size={15} />} label="Wait" value={`${item.waitingMinutes}m`} />
                 <Mini icon={<IndianRupee size={15} />} label="Total" value={`Rs ${Math.round(selectedShop?.shop?.id === item.shop.id ? vendorTotal : item.estimatedPrice)}`} />
               </div>
-            </button>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                {item.shop.phone && (
+                  <a
+                    href={`tel:${item.shop.phone}`}
+                    onClick={(event) => event.stopPropagation()}
+                    className="premium-button secondary min-h-0 px-3 py-2 text-sm"
+                  >
+                    <Phone size={16} />
+                    Call
+                  </a>
+                )}
+                {item.shop.latitude && item.shop.longitude && (
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${item.shop.latitude},${item.shop.longitude}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(event) => event.stopPropagation()}
+                    className="premium-button secondary min-h-0 px-3 py-2 text-sm"
+                  >
+                    <Navigation size={16} />
+                    Navigate
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    navigate(`/customer/shops/${item.shop.id}`);
+                  }}
+                  className="premium-button secondary min-h-0 px-3 py-2 text-sm"
+                >
+                  <Store size={16} />
+                  Profile
+                </button>
+              </div>
+            </div>
           ))}
         </section>
       )}

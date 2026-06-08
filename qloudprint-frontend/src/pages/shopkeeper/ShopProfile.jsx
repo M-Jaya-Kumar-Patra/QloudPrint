@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Banknote, Camera, Clock, IndianRupee, Loader2, MapPin, Save, Settings2, Store } from "lucide-react";
+import { Banknote, Camera, Clock, IndianRupee, Loader2, MapPin, Navigation, Save, Settings2, Store } from "lucide-react";
 
 import { getMyShop, saveMyShop, uploadShopPhoto } from "../../api/shopApi";
 import { toast } from "../../utils/toastStore";
@@ -14,12 +14,13 @@ const bindings = [
 
 const ShopProfile = () => {
     const [saving, setSaving] = useState(false);
+    const [locating, setLocating] = useState(false);
     const [formData, setFormData] = useState({
         name: "",
         address: "",
         phone: "",
-        latitude: "20.2961",
-        longitude: "85.8245",
+        latitude: "",
+        longitude: "",
         openingTime: "09:00",
         closingTime: "21:00",
         openNow: true,
@@ -81,6 +82,12 @@ const ShopProfile = () => {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+
+        if (!formData.latitude || !formData.longitude) {
+            toast.error("Enter shop latitude and longitude or use GPS");
+            return;
+        }
+
         setSaving(true);
 
         try {
@@ -115,6 +122,12 @@ const ShopProfile = () => {
             return;
         }
 
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error("Photo must be 5MB or smaller");
+            event.target.value = "";
+            return;
+        }
+
         const data = new FormData();
         data.append("file", file);
 
@@ -125,6 +138,31 @@ const ShopProfile = () => {
         } catch (error) {
             toast.error(error.response?.data?.message || "Photo upload failed");
         }
+    };
+
+    const handleUseGps = () => {
+        if (!navigator.geolocation) {
+            toast.error("GPS is not available in this browser");
+            return;
+        }
+
+        setLocating(true);
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setFormData((current) => ({
+                    ...current,
+                    latitude: Number(position.coords.latitude.toFixed(6)),
+                    longitude: Number(position.coords.longitude.toFixed(6)),
+                }));
+                setLocating(false);
+                toast.success("Shop location added");
+            },
+            () => {
+                setLocating(false);
+                toast.error("Could not access location");
+            },
+        );
     };
 
     return (
@@ -157,9 +195,13 @@ const ShopProfile = () => {
                     </div>
                     <Input name="address" label="Full address" value={formData.address} onChange={handleChange} />
                     <div className="grid md:grid-cols-2 gap-4">
-                        <Input name="latitude" label="Latitude" value={formData.latitude} onChange={handleChange} />
-                        <Input name="longitude" label="Longitude" value={formData.longitude} onChange={handleChange} />
+                        <Input name="latitude" label="Latitude" value={formData.latitude} onChange={handleChange} placeholder="Enter latitude or use GPS" required />
+                        <Input name="longitude" label="Longitude" value={formData.longitude} onChange={handleChange} placeholder="Enter longitude or use GPS" required />
                     </div>
+                    <button type="button" onClick={handleUseGps} disabled={locating} className="premium-button secondary w-full">
+                        {locating ? <Loader2 className="animate-spin" size={18} /> : <Navigation size={18} />}
+                        Use GPS for shop location
+                    </button>
                     <PhotoUpload label="Upload shop photo" onChange={(event) => handlePhotoUpload(event, "shopPhotoUrl")} />
                     {formData.shopPhotoUrl ? (
                         <img src={formData.shopPhotoUrl} alt="Shop preview" className="h-52 w-full rounded-3xl object-cover" />
@@ -224,7 +266,7 @@ const ShopProfile = () => {
                     <Input name="gstNumber" label="GST number" value={formData.gstNumber || ""} onChange={handleChange} />
                 </div>
                 <p className="rounded-2xl bg-amber-50 p-4 text-sm font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
-                    Production payout crediting needs Cashfree/settlement account verification. These details are stored for the payout workflow.
+                    Production settlement uses your saved bank or UPI details. Automatic payouts can be connected later with RazorpayX or Razorpay Route when enabled on your Razorpay account.
                 </p>
             </section>
         </form>

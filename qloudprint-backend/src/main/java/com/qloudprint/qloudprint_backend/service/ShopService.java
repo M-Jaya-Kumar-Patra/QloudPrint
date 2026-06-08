@@ -17,6 +17,7 @@ import com.cloudinary.utils.ObjectUtils;
 
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -36,6 +37,10 @@ public class ShopService {
 
         User owner = userRepository.findByEmail(ownerEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (request.getLatitude() == null || request.getLongitude() == null) {
+            throw new RuntimeException("Shop latitude and longitude are required. Enter them manually or use GPS.");
+        }
 
         Shop shop = shopRepository.findByOwner(owner)
                 .orElseGet(Shop::new);
@@ -100,6 +105,17 @@ public class ShopService {
 
     public Map<String, String> uploadShopPhoto(MultipartFile file) throws IOException {
 
+        if (file.getSize() > 5 * 1024 * 1024) {
+            throw new RuntimeException("Photo must be 5MB or smaller");
+        }
+
+        String contentType =
+                file.getContentType();
+
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new RuntimeException("Only image uploads are allowed");
+        }
+
         Map uploadResult =
                 cloudinary.uploader().upload(
                         file.getBytes(),
@@ -117,20 +133,30 @@ public class ShopService {
         );
     }
 
+    public Shop getPublicShop(Long shopId) {
+
+        return shopRepository.findById(shopId)
+                .orElseThrow(() ->
+                        new RuntimeException("Shop not found"));
+    }
+
     public List<ShopRecommendationResponse> recommendShops(
             Double latitude,
             Double longitude,
             Integer pageCount,
             Integer copies,
-            Boolean colorPrint
+            Boolean colorPrint,
+            String customerEmail
     ) {
 
         int totalPages = defaultInteger(pageCount, 1) * defaultInteger(copies, 1);
+        Long lastShopId =
+                resolveLastOrderedShopId(customerEmail);
 
         return shopRepository.findByOpenNowTrueAndVerifiedTrue()
                 .stream()
                 .filter(shop -> !Boolean.TRUE.equals(colorPrint) || Boolean.TRUE.equals(shop.getColorPrinting()))
-                .map(shop -> buildRecommendation(shop, latitude, longitude, totalPages, Boolean.TRUE.equals(colorPrint)))
+                .map(shop -> buildRecommendation(shop, latitude, longitude, totalPages, Boolean.TRUE.equals(colorPrint), lastShopId))
                 .sorted(Comparator.comparing(ShopRecommendationResponse::getRecommendationScore).reversed())
                 .toList();
     }
@@ -140,7 +166,8 @@ public class ShopService {
             Double latitude,
             Double longitude,
             int totalPages,
-            boolean colorPrint
+            boolean colorPrint,
+            Long lastShopId
     ) {
 
         double distanceKm = calculateDistanceKm(latitude, longitude, shop.getLatitude(), shop.getLongitude());
@@ -164,6 +191,11 @@ public class ShopService {
         double priceScore = Math.max(0, 100 - price / 2);
         double ratingScore = defaultDouble(shop.getRating(), 4.0) * 20;
         double score = distanceScore * 0.30 + waitScore * 0.30 + priceScore * 0.25 + ratingScore * 0.15;
+        boolean isLastOrderedShop =
+                lastShopId != null && shop.getId().equals(lastShopId);
+
+        List<String> tags =
+                buildTags(distanceKm, waitingMinutes, isLastOrderedShop);
 
         return ShopRecommendationResponse.builder()
                 .shop(shop)
@@ -172,7 +204,44 @@ public class ShopService {
                 .waitingMinutes(waitingMinutes)
                 .recommendationScore(round(score))
                 .badge(resolveBadge(distanceKm, waitingMinutes, price, score))
+                .tags(tags)
+                .lastOrderedShop(isLastOrderedShop)
                 .build();
+    }
+
+    private Long resolveLastOrderedShopId(String customerEmail) {
+
+        if (customerEmail == null) {
+            return null;
+        }
+
+        return userRepository.findByEmail(customerEmail)
+                .flatMap(orderRepository::findTopByUserOrderByIdDesc)
+                .map(order -> order.getShop() == null ? null : order.getShop().getId())
+                .orElse(null);
+    }
+
+    private List<String> buildTags(double distanceKm, int waitingMinutes, boolean lastOrderedShop) {
+
+        List<String> tags =
+                new ArrayList<>();
+
+        if (lastOrderedShop) {
+            tags.add("Last ordered shop");
+        }
+
+        if (distanceKm <= 1.5) {
+            tags.add("Nearest");
+        }
+
+        if (waitingMinutes <= 10) {
+            tags.add("Fast delivery");
+            tags.add("Less waiting time");
+        } else if (waitingMinutes <= 20) {
+            tags.add("Less waiting time");
+        }
+
+        return tags;
     }
 
     private String resolveBadge(double distanceKm, int waitingMinutes, double price, double score) {

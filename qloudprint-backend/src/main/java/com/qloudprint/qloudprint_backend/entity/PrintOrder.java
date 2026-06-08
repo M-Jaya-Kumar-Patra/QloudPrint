@@ -76,4 +76,38 @@ public class PrintOrder {
     private Boolean paymentCompleted;
 
     private String paymentOrderId;
+
+    private Integer customerRating;
+
+    @Column(length = 600)
+    private String customerReview;
+
+    private Double platformFee;
+
+    private Double shopPayoutAmount;
+
+    private String payoutStatus;
+
+    private String payoutTransferId;
+
+    private String payoutCfTransferId;
+
+    @Column(length = 1000)
+    private String payoutFailureReason;
+
+    private String cancelledBy;
+
+    @Column(length = 800)
+    private String cancellationReason;
+
+    private String refundStatus;
+
+    private String refundId;
+
+    private String cfRefundId;
+
+    private Double refundAmount;
+
+    @Column(length = 1000)
+    private String refundFailureReason;
 }

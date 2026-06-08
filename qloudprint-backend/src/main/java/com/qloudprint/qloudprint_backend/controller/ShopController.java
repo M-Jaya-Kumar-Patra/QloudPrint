@@ -35,6 +35,14 @@ public class ShopController {
         return shopService.getMyShop(authentication.getName());
     }
 
+    @GetMapping("/{shopId}")
+    public Shop getShopProfile(
+            @PathVariable Long shopId
+    ) {
+
+        return shopService.getPublicShop(shopId);
+    }
+
     @PostMapping("/upload-photo")
     public Map<String, String> uploadPhoto(
             @RequestParam("file") MultipartFile file
@@ -49,7 +57,8 @@ public class ShopController {
             @RequestParam Double longitude,
             @RequestParam Integer pageCount,
             @RequestParam Integer copies,
-            @RequestParam Boolean colorPrint
+            @RequestParam Boolean colorPrint,
+            Authentication authentication
     ) {
 
         return shopService.recommendShops(
@@ -57,7 +66,8 @@ public class ShopController {
                 longitude,
                 pageCount,
                 copies,
-                colorPrint
+                colorPrint,
+                authentication == null ? null : authentication.getName()
         );
     }
 }

@@ -20,5 +20,6 @@ public interface PrintOrderRepository
     List<PrintOrder> findByStatus(OrderStatus status);
     List<PrintOrder> findAllByOrderByPriorityScoreAsc();
     List<PrintOrder> findByShopOrderByPriorityScoreAsc(Shop shop);
+    Optional<PrintOrder> findTopByUserOrderByIdDesc(User user);
     Optional<PrintOrder> findByOrderCode(String orderCode);
 }

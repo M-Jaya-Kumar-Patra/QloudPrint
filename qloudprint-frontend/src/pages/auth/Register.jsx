@@ -6,6 +6,7 @@ import { registerUser } from "../../api/authApi";
 import { toast } from "../../utils/toastStore";
 import BrandLogo from "../../components/common/BrandLogo";
 import ThemeToggle from "../../components/common/ThemeToggle";
+import { PublicFooter } from "../public/PublicInfoPages";
 
 const roles = [
   { id: "CUSTOMER", label: "Customer" },
@@ -68,7 +69,7 @@ const checkPasswordStrength = (password) => {
     try {
       const response = await registerUser(formData);
       toast.success(response.data.message);
-      navigate("/login");
+      navigate(`/verify-email?email=${encodeURIComponent(formData.email)}`);
     } catch (error) {
       toast.error(error.response?.data?.message || "Something went wrong");
     } finally {
@@ -160,6 +161,10 @@ const checkPasswordStrength = (password) => {
             Create account
           </button>
         </form>
+      </div>
+
+      <div className="-mx-6 mt-12">
+        <PublicFooter />
       </div>
     </div>
   );

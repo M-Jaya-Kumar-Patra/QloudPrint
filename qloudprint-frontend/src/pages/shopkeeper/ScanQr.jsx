@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { Html5QrcodeScanner } from "html5-qrcode";
-import { CheckCircle2, FileText, QrCode } from "lucide-react";
+import { CheckCircle2, FileText, Loader2, QrCode, Search } from "lucide-react";
 
 import { verifyQrOrder, updateOrderStatus } from "../../api/orderApi";
 import { toast } from "../../utils/toastStore";
 
 const ScanQr = () => {
     const [order, setOrder] = useState(null);
+    const [manualCode, setManualCode] = useState("");
+    const [checkingCode, setCheckingCode] = useState(false);
 
     useEffect(() => {
         if (order) {
@@ -45,6 +47,26 @@ const ScanQr = () => {
         }
     };
 
+    const verifyManualCode = async () => {
+        if (!manualCode.trim()) {
+            toast.error("Enter the QLD pickup code");
+            return;
+        }
+
+        setCheckingCode(true);
+
+        try {
+            const response = await verifyQrOrder(manualCode.trim());
+            setOrder(response.data);
+            toast.success("Order verified");
+        } catch (error) {
+            console.log(error);
+            toast.error("Order not found");
+        } finally {
+            setCheckingCode(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             <section className="premium-panel p-6 lg:p-8">
@@ -59,6 +81,23 @@ const ScanQr = () => {
             <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
                 <div className="premium-card p-5">
                     {!order && <div id="reader" className="overflow-hidden rounded-3xl" />}
+                    {!order && (
+                        <div className="mt-5 rounded-3xl border border-slate-200 p-4 dark:border-slate-800">
+                            <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Or enter pickup code manually</p>
+                            <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                                <input
+                                    value={manualCode}
+                                    onChange={(event) => setManualCode(event.target.value)}
+                                    placeholder="QLD-..."
+                                    className="field-input"
+                                />
+                                <button onClick={verifyManualCode} disabled={checkingCode} className="premium-button">
+                                    {checkingCode ? <Loader2 className="animate-spin" size={18} /> : <Search size={18} />}
+                                    Verify
+                                </button>
+                            </div>
+                        </div>
+                    )}
                     {order && (
                         <div className="text-center">
                             <CheckCircle2 className="mx-auto text-emerald-500" size={52} />

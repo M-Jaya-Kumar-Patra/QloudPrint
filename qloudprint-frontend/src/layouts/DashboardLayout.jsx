@@ -1,6 +1,7 @@
 import Sidebar from "../components/layout/Sidebar";
 
 import Topbar from "../components/layout/Topbar";
+import { PublicFooter } from "../pages/public/PublicInfoPages";
 
 const DashboardLayout = ({
     children
@@ -12,20 +13,21 @@ const DashboardLayout = ({
             <Sidebar />
 
             <div className="
-                pb-24
-                lg:ml-72
-                lg:pb-0
-                flex-1
-                bg-slate-100
-                dark:bg-slate-950
-                min-h-screen
-            ">
+    lg:ml-72
+    lg:pt-0
+    flex-1
+    bg-slate-100
+    dark:bg-slate-950
+    min-h-screen
+">
 
                 <Topbar />
 
                 <div className="p-5 lg:p-8">
                     {children}
                 </div>
+
+                <PublicFooter />
 
             </div>
 

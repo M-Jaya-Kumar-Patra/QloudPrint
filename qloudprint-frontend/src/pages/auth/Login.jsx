@@ -7,6 +7,7 @@ import { loginUser } from "../../api/authApi";
 import { toast } from "../../utils/toastStore";
 import BrandLogo from "../../components/common/BrandLogo";
 import ThemeToggle from "../../components/common/ThemeToggle";
+import { PublicFooter } from "../public/PublicInfoPages";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -66,6 +67,9 @@ const Login = () => {
           <h2 className="text-3xl font-black text-slate-950 dark:text-white">Login</h2>
           <Input type="email" name="email" label="Email" value={formData.email} onChange={handleChange} />
           <Input type="password" name="password" label="Password" value={formData.password} onChange={handleChange} />
+          <button type="button" onClick={() => navigate("/forgot-password")} className="text-sm font-black text-cyan-600">
+            Forgot password?
+          </button>
           <button disabled={loading || !formData.email || !formData.password} className="premium-button w-full">
             {loading ? <Loader2 className="animate-spin" size={18} /> : <LogIn size={18} />}
             Login
@@ -74,6 +78,10 @@ const Login = () => {
             Create account
           </button>
         </form>
+      </div>
+
+      <div className="-mx-6 mt-12">
+        <PublicFooter />
       </div>
     </div>
   );

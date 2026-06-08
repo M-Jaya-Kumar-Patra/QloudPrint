@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { BellRing, Clock3, Download, FileText, IndianRupee, Loader2, PackageCheck, Printer, Search, X } from "lucide-react";
+import { BellRing, Clock3, Download, FileText, IndianRupee, Loader2, PackageCheck, Printer, RefreshCcw, Search, X } from "lucide-react";
 
-import { getAllOrders, updateOrderStatus } from "../../api/orderApi";
+import { cancelShopkeeperOrder, getAllOrders, retryOrderPayout, updateOrderStatus } from "../../api/orderApi";
 import { getMyShop } from "../../api/shopApi";
 import stompClient from "../../services/websocket";
 import { downloadDocument, openDocument } from "../../utils/downloads";
@@ -72,6 +72,36 @@ const ShopkeeperDashboard = () => {
     const handleStatusChange = async (orderId, status) => {
         try {
             await updateOrderStatus(orderId, { status });
+            fetchData();
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const handleRetryPayout = async (event, orderId) => {
+        event.stopPropagation();
+
+        try {
+            await retryOrderPayout(orderId);
+            fetchData();
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const canCancel = (order) => ["PENDING", "PAYMENT_CONFIRMED", "QUEUED"].includes(order.status);
+
+    const handleCancelOrder = async (event, order) => {
+        event.stopPropagation();
+
+        const reason = window.prompt("Reason for cancelling this order");
+
+        if (reason === null) {
+            return;
+        }
+
+        try {
+            await cancelShopkeeperOrder(order.id, reason);
             fetchData();
         } catch (error) {
             console.log(error);
@@ -188,6 +218,26 @@ const ShopkeeperDashboard = () => {
                                 </div>
                                 <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 dark:bg-slate-950 dark:text-slate-300">
                                     <p><strong>Instructions:</strong> {order.specialInstructions || "None"}</p>
+                                    {order.status === "COMPLETED" && (
+                                        <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+                                            <p><strong>Payout:</strong> {order.payoutStatus || "Not started"}</p>
+                                            <p><strong>Shop payout:</strong> Rs {order.shopPayoutAmount || 0}</p>
+                                            <p><strong>Platform fee:</strong> Rs {order.platformFee || 0}</p>
+                                            {order.payoutFailureReason && <p className="text-red-500"><strong>Reason:</strong> {order.payoutFailureReason}</p>}
+                                            {order.payoutStatus === "FAILED" && (
+                                                <button type="button" onClick={(event) => handleRetryPayout(event, order.id)} className="premium-button secondary mt-3 min-h-0 px-3 py-2 text-sm">
+                                                    <RefreshCcw size={16} />
+                                                    Retry payout
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                    {order.refundStatus && (
+                                        <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
+                                            <p><strong>Refund:</strong> {order.refundStatus} {order.refundAmount ? `(Rs ${order.refundAmount})` : ""}</p>
+                                            {order.refundFailureReason && <p><strong>Issue:</strong> {order.refundFailureReason}</p>}
+                                        </div>
+                                    )}
                                     <button type="button" onClick={(event) => { event.stopPropagation(); openDocument(order.fileUrl); }} className="mt-2 inline-flex items-center gap-2 font-black text-cyan-600">Open document</button>
                                     <button type="button" onClick={(event) => { event.stopPropagation(); downloadDocument(order.fileUrl, order.fileName); }} className="ml-4 mt-2 inline-flex items-center gap-2 font-black text-cyan-600">
                                         <Download size={16} />
@@ -200,6 +250,11 @@ const ShopkeeperDashboard = () => {
                                 <select onClick={(event) => event.stopPropagation()} onChange={(event) => handleStatusChange(order.id, event.target.value)} value={order.status} className="field-input mt-3">
                                     {statuses.map((status) => <option key={status} value={status}>{status}</option>)}
                                 </select>
+                                {canCancel(order) && (
+                                    <button type="button" onClick={(event) => handleCancelOrder(event, order)} className="premium-button secondary mt-3 w-full text-red-500">
+                                        Cancel and refund
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>

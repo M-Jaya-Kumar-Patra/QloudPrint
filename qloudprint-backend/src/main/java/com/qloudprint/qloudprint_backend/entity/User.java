@@ -7,6 +7,7 @@ import com.qloudprint.qloudprint_backend.entity.Role;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
@@ -30,4 +31,14 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    private Boolean emailVerified;
+
+    private String otpCode;
+
+    private LocalDateTime otpExpiresAt;
+
+    private LocalDateTime createdAt;
+
+    private LocalDateTime lastLoginAt;
 }

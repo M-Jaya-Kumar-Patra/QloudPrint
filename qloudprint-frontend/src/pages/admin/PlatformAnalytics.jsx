@@ -1,29 +1,49 @@
 import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from "recharts";
-import { BarChart3, IndianRupee, Loader2, ShoppingBag, Store, Users } from "lucide-react";
+import { BarChart3, IndianRupee, Loader2, Percent, RefreshCcw, Save, ShoppingBag, Store, Users } from "lucide-react";
 
-import { getPlatformAnalytics } from "../../api/adminApi";
+import { getPlatformAnalytics, updatePlatformSettings } from "../../api/adminApi";
+import { toast } from "../../utils/toastStore";
 
 const colors = ["#06b6d4", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#64748b"];
 
 const PlatformAnalytics = () => {
     const [analytics, setAnalytics] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [savingFee, setSavingFee] = useState(false);
+    const [platformFeePercent, setPlatformFeePercent] = useState(10);
+
+    const loadAnalytics = async () => {
+        try {
+            const response = await getPlatformAnalytics();
+            setAnalytics(response.data);
+            setPlatformFeePercent(response.data?.platformSettings?.platformFeePercent || 10);
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const loadAnalytics = async () => {
-            try {
-                const response = await getPlatformAnalytics();
-                setAnalytics(response.data);
-            } catch (error) {
-                console.log(error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         loadAnalytics();
     }, []);
+
+    const savePlatformFee = async () => {
+        setSavingFee(true);
+
+        try {
+            await updatePlatformSettings({
+                platformFeePercent: Number(platformFeePercent),
+            });
+            toast.success("Platform fee updated");
+            loadAnalytics();
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Could not update platform fee");
+        } finally {
+            setSavingFee(false);
+        }
+    };
 
     if (loading) {
         return <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-cyan-500" size={46} /></div>;
@@ -51,7 +71,36 @@ const PlatformAnalytics = () => {
                 <Metric icon={<Store />} label="Shops" value={analytics?.shops || 0} />
                 <Metric icon={<ShoppingBag />} label="Orders" value={analytics?.orders || 0} />
                 <Metric icon={<IndianRupee />} label="Revenue" value={`Rs ${Math.round(analytics?.revenue || 0)}`} />
+                <Metric icon={<IndianRupee />} label="Platform earnings" value={`Rs ${Math.round(analytics?.platformEarnings || 0)}`} />
+                <Metric icon={<IndianRupee />} label="Shop payouts" value={`Rs ${Math.round(analytics?.shopPayoutTotal || 0)}`} />
+                <Metric icon={<RefreshCcw />} label="Refunded" value={`Rs ${Math.round(analytics?.refundedAmount || 0)}`} />
+                <Metric icon={<ShoppingBag />} label="Cancelled" value={analytics?.cancelledOrders || 0} />
+                <Metric icon={<ShoppingBag />} label="Pending payouts" value={analytics?.pendingPayouts || 0} />
+                <Metric icon={<ShoppingBag />} label="Failed payouts" value={analytics?.failedPayouts || 0} />
+                <Metric icon={<RefreshCcw />} label="Refund failures" value={analytics?.refundFailures || 0} />
+                <Metric icon={<Percent />} label="Platform fee" value={`${analytics?.platformSettings?.platformFeePercent || 0}%`} />
             </div>
+
+            <section className="premium-card p-5">
+                <h2 className="text-xl font-black text-slate-950 dark:text-white">Platform fee control</h2>
+                <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
+                    <label className="block">
+                        <span className="text-sm font-bold text-slate-600 dark:text-slate-300">Platform fee percentage</span>
+                        <input
+                            className="field-input mt-2"
+                            type="number"
+                            min="0"
+                            max="50"
+                            value={platformFeePercent}
+                            onChange={(event) => setPlatformFeePercent(event.target.value)}
+                        />
+                    </label>
+                    <button onClick={savePlatformFee} disabled={savingFee} className="premium-button self-end">
+                        {savingFee ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+                        Save fee
+                    </button>
+                </div>
+            </section>
 
             <div className="grid gap-6 xl:grid-cols-2">
                 <ChartCard title="User mix">

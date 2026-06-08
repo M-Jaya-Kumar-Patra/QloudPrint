@@ -92,6 +92,15 @@ CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
 CASHFREE_CLIENT_ID=your_cashfree_client_id
 CASHFREE_CLIENT_SECRET=your_cashfree_client_secret
+CASHFREE_ENV=sandbox
+CASHFREE_PAYOUT_CLIENT_ID=your_cashfree_payout_client_id
+CASHFREE_PAYOUT_CLIENT_SECRET=your_cashfree_payout_client_secret
+CASHFREE_PAYOUT_ENV=sandbox
+PLATFORM_FEE_PERCENT=10
+
+GMAIL_SMTP_USERNAME=your_gmail_address@gmail.com
+GMAIL_SMTP_APP_PASSWORD=your_16_character_gmail_app_password
+FRONTEND_URL=http://localhost:5173
 ```
 
 Run the backend:
@@ -235,6 +244,17 @@ CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 CASHFREE_CLIENT_ID=your_cashfree_client_id
 CASHFREE_CLIENT_SECRET=your_cashfree_client_secret
+<<<<<<< HEAD
+=======
+CASHFREE_ENV=production
+CASHFREE_PAYOUT_CLIENT_ID=your_cashfree_payout_client_id
+CASHFREE_PAYOUT_CLIENT_SECRET=your_cashfree_payout_client_secret
+CASHFREE_PAYOUT_ENV=production
+PLATFORM_FEE_PERCENT=10
+GMAIL_SMTP_USERNAME=your_gmail_address@gmail.com
+GMAIL_SMTP_APP_PASSWORD=your_16_character_gmail_app_password
+FRONTEND_URL=https://your-frontend-domain.com
+>>>>>>> 9b6b822 (secure application properties)
 ```
 
 If deploying the frontend separately, set:

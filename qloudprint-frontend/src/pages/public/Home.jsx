@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
     ArrowRight,
     Clock3,
@@ -12,6 +12,8 @@ import {
     Star,
     Store
 } from "lucide-react";
+import { PublicFooter } from "./PublicInfoPages";
+import ThemeToggle from "../../components/common/ThemeToggle";
 
 const Home = () => {
     const navigate = useNavigate();
@@ -26,37 +28,38 @@ const Home = () => {
     }, [navigate]);
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white">
-            <header className="relative z-10 flex items-center justify-between px-6 lg:px-12 py-6">
+        <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-white">
+            <header className="relative z-10 flex items-center justify-between bg-white/90 px-6 py-6 backdrop-blur dark:bg-slate-950/90 lg:px-12">
                 <button onClick={() => navigate("/")} className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400 text-slate-950">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-cyan-300 dark:bg-white dark:text-slate-950">
                         <Printer size={24} />
                     </div>
                     <span className="text-2xl font-black tracking-tight">QloudPrint</span>
                 </button>
 
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate("/login")} className="rounded-2xl border border-white/15 px-5 py-3 font-semibold text-slate-200 hover:bg-white/10 transition">
+                    <ThemeToggle />
+                    <button onClick={() => navigate("/login")} className="rounded-2xl border border-slate-200 px-5 py-3 font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-white/15 dark:text-slate-200 dark:hover:bg-white/10">
                         Login
                     </button>
-                    <button onClick={() => navigate("/register")} className="rounded-2xl bg-white px-5 py-3 font-black text-slate-950 hover:scale-105 transition">
+                    <button onClick={() => navigate("/register")} className="hidden rounded-2xl bg-slate-950 px-5 py-3 font-black text-white transition hover:scale-105 dark:bg-white dark:text-slate-950 sm:inline-flex">
                         Get Started
                     </button>
                 </div>
             </header>
 
             <main>
-                <section className="relative bg-[linear-gradient(135deg,#06283a_0%,#0f172a_46%,#020617_100%)] px-6 pb-16 pt-10 lg:px-12">
+                <section className="relative bg-[linear-gradient(135deg,#e0f7ff_0%,#f8fafc_46%,#ffffff_100%)] px-6 pb-16 pt-10 dark:bg-[linear-gradient(135deg,#06283a_0%,#0f172a_46%,#020617_100%)] lg:px-12">
                     <div className="relative mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
                         <div className="animate-fade-in">
-                            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm font-semibold text-cyan-100">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/40 bg-cyan-100 px-4 py-2 text-sm font-semibold text-cyan-900 dark:border-cyan-300/20 dark:bg-cyan-300/10 dark:text-cyan-100">
                                 <Sparkles size={16} />
                                 Multivendor print marketplace
                             </div>
                             <h1 className="mt-6 max-w-4xl text-5xl font-black leading-[1.02] tracking-tight lg:text-7xl">
                                 Find the best nearby print shop before you place the order.
                             </h1>
-                            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
+                            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-300">
                                 Upload your PDF, compare local vendors by distance, waiting time, price, services, and ratings, then pay online and pick up with a secure QR code.
                             </p>
                             <div className="mt-9 flex flex-wrap gap-4">
@@ -64,7 +67,7 @@ const Home = () => {
                                     Start printing
                                     <ArrowRight size={20} />
                                 </button>
-                                <button onClick={() => navigate("/register")} className="inline-flex items-center gap-3 rounded-2xl border border-white/15 px-7 py-4 font-bold text-white hover:bg-white/10 transition">
+                                <button onClick={() => navigate("/register")} className="inline-flex items-center gap-3 rounded-2xl border border-slate-300 px-7 py-4 font-bold text-slate-900 transition hover:bg-white dark:border-white/15 dark:text-white dark:hover:bg-white/10">
                                     Register a shop
                                     <Store size={20} />
                                 </button>
@@ -92,7 +95,7 @@ const Home = () => {
                                 </div>
                             </div>
 
-                            <div className="w-full rounded-[28px] border border-white/10 bg-slate-900/90 p-5 shadow-2xl backdrop-blur-xl lg:absolute lg:bottom-10 lg:right-0 lg:w-[76%]">
+                            <div className="w-full rounded-[28px] border border-slate-200 bg-white/90 p-5 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/90 lg:absolute lg:bottom-10 lg:right-0 lg:w-[76%]">
                                 <div className="grid grid-cols-2 gap-3">
                                     <Feature icon={<Store size={22} />} title="Vendor profiles" />
                                     <Feature icon={<QrCode size={22} />} title="QR pickup" />
@@ -104,13 +107,22 @@ const Home = () => {
                     </div>
                 </section>
 
-                <section className="relative z-10 mx-auto grid max-w-7xl gap-4 bg-slate-950 px-6 py-12 md:grid-cols-2 lg:grid-cols-4 lg:px-12">
+                <section className="relative z-10 mx-auto grid max-w-7xl gap-4 bg-slate-50 px-6 py-12 dark:bg-slate-950 md:grid-cols-2 lg:grid-cols-4 lg:px-12">
                     <InfoCard icon={<MapPin />} title="Nearby search" text="Customers find open shops around them using shop latitude and longitude." />
                     <InfoCard icon={<Clock3 />} title="Live wait time" text="Queues are ranked with active order minutes and shop print speed." />
                     <InfoCard icon={<IndianRupee />} title="Value score" text="Recommendations balance price, rating, distance, and waiting time." />
                     <InfoCard icon={<Store />} title="Shop control" text="Vendors manage pricing, services, status, and their own queue." />
                 </section>
+
+                <section className="border-y border-slate-200 bg-white px-6 py-10 dark:border-white/10 dark:bg-slate-900 lg:px-12">
+                    <div className="mx-auto grid max-w-7xl gap-5 md:grid-cols-3">
+                        <HomeLink to="/pricing" title="Transparent pricing" text="Customers see the order estimate and applicable charges before payment." />
+                        <HomeLink to="/refund-cancellation-policy" title="Refund policy" text="Eligible cancellations and failed payments are handled through the original payment method." />
+                        <HomeLink to="/contact" title="Support" text="Reach QloudPrint for order, payment, refund, and shop onboarding help." />
+                    </div>
+                </section>
             </main>
+            <PublicFooter />
         </div>
     );
 };
@@ -124,18 +136,25 @@ const CardMetric = ({ icon, label, value }) => (
 );
 
 const Feature = ({ icon, title }) => (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5">
         <div className="text-cyan-300">{icon}</div>
         <p className="mt-3 font-black">{title}</p>
     </div>
 );
 
 const InfoCard = ({ icon, title, text }) => (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
+    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5">
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-400 text-slate-950">{icon}</div>
         <h3 className="mt-5 text-xl font-black">{title}</h3>
-        <p className="mt-2 text-sm leading-6 text-slate-400">{text}</p>
+        <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">{text}</p>
     </div>
+);
+
+const HomeLink = ({ to, title, text }) => (
+    <Link to={to} className="rounded-3xl border border-slate-200 bg-slate-50 p-6 transition hover:border-cyan-400 hover:bg-cyan-50 dark:border-white/10 dark:bg-white/5 dark:hover:border-cyan-300/60 dark:hover:bg-white/10">
+        <h3 className="text-xl font-black">{title}</h3>
+        <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{text}</p>
+    </Link>
 );
 
 export default Home;

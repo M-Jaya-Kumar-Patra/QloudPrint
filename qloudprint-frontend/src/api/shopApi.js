@@ -14,6 +14,10 @@ export const getShopRecommendations = async (params) => {
     });
 };
 
+export const getShopProfile = async (shopId) => {
+    return api.get(`/shops/${shopId}`);
+};
+
 export const uploadShopPhoto = async (data) => {
     return api.post("/shops/upload-photo", data, {
         headers: {
