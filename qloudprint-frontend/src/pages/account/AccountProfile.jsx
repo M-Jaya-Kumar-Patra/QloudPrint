@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { KeyRound, Loader2, MailCheck, UserCircle } from "lucide-react";
+import { KeyRound, Loader2, UserCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { getMyProfile } from "../../api/authApi";
@@ -37,24 +37,19 @@ const AccountProfile = () => {
           Profile
         </div>
         <h1 className="mt-4 text-4xl font-black text-slate-950 dark:text-white">Account settings</h1>
-        <p className="mt-2 text-slate-500 dark:text-slate-400">Manage your identity, email verification, and password recovery.</p>
+        <p className="mt-2 text-slate-500 dark:text-slate-400">Manage your identity and password recovery.</p>
       </section>
 
       <section className="premium-card grid gap-4 p-6 md:grid-cols-2">
         <Info label="Name" value={profile?.name} />
         <Info label="Email" value={profile?.email} />
         <Info label="Role" value={profile?.role} />
-        <Info label="Email status" value={profile?.emailVerified ? "Verified" : "Not verified"} />
       </section>
 
-      <section className="premium-card grid gap-3 p-6 sm:grid-cols-2">
+      <section className="premium-card grid gap-3 p-6">
         <button onClick={() => navigate("/forgot-password")} className="premium-button secondary">
           <KeyRound size={18} />
           Forgot password
-        </button>
-        <button onClick={() => navigate(`/verify-email?email=${encodeURIComponent(profile?.email || "")}`)} className="premium-button">
-          <MailCheck size={18} />
-          Verify email
         </button>
       </section>
     </div>

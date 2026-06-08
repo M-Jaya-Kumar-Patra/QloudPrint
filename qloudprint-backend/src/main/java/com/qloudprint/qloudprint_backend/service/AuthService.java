@@ -4,7 +4,6 @@ package com.qloudprint.qloudprint_backend.service;
 import com.qloudprint.qloudprint_backend.dto.AuthResponse;
 import com.qloudprint.qloudprint_backend.dto.ResetPasswordRequest;
 import com.qloudprint.qloudprint_backend.dto.RegisterRequest;
-import com.qloudprint.qloudprint_backend.dto.VerifyOtpRequest;
 import com.qloudprint.qloudprint_backend.entity.Role;
 import com.qloudprint.qloudprint_backend.entity.User;
 import com.qloudprint.qloudprint_backend.exception.BadRequestException;
@@ -46,35 +45,20 @@ public class AuthService {
             throw new BadRequestException("Email already registered");
         }
 
-        String otp =
-                generateOtp();
-
         User user = User.builder()
                 .name(request.getName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(resolveRole(request.getRole()))
-                .emailVerified(false)
-                .otpCode(otp)
-                .otpExpiresAt(LocalDateTime.now().plusMinutes(10))
+                .otpCode(null)
+                .otpExpiresAt(null)
                 .createdAt(LocalDateTime.now())
                 .build();
 
         userRepository.saveAndFlush(user);
 
-        try {
-            emailService.sendOtpEmail(
-                    user.getEmail(),
-                    "Verify your QloudPrint email",
-                    otp,
-                    "email verification"
-            );
-        } catch (MailException exception) {
-            throw new BadRequestException("Could not send OTP email. Please check the SMTP configuration and try again.");
-        }
-
         return Map.of(
-                "message", "Account created. Verify your email with the OTP sent to your email."
+                "message", "Account created. You can login now."
         );
     }
 
@@ -102,10 +86,6 @@ public class AuthService {
             );
         }
 
-        if (!Boolean.TRUE.equals(user.getEmailVerified())) {
-            throw new BadRequestException("Please verify your email before login");
-        }
-
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);
 
@@ -131,47 +111,6 @@ public class AuthService {
         }
 
         return Role.CUSTOMER;
-    }
-
-    public Map<String, String> resendVerificationOtp(String email) {
-
-        User user = userRepository
-                .findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "User not found"
-                        ));
-
-        if (Boolean.TRUE.equals(user.getEmailVerified())) {
-            return Map.of("message", "Email is already verified");
-        }
-
-        String otp =
-                refreshOtp(user);
-
-        sendOtpOrFail(
-                user.getEmail(),
-                "Verify your QloudPrint email",
-                otp,
-                "email verification"
-        );
-
-        return Map.of(
-                "message", "Verification OTP sent"
-        );
-    }
-
-    public String verifyEmail(VerifyOtpRequest request) {
-
-        User user =
-                getUserWithValidOtp(request.getEmail(), request.getOtp());
-
-        user.setEmailVerified(true);
-        user.setOtpCode(null);
-        user.setOtpExpiresAt(null);
-        userRepository.save(user);
-
-        return "Email verified successfully";
     }
 
     public Map<String, String> forgotPassword(String email) {
@@ -218,18 +157,6 @@ public class AuthService {
                         new ResourceNotFoundException(
                                 "User not found"
                         ));
-    }
-
-    public int deleteStaleUnverifiedUsers() {
-
-        var staleUsers =
-                userRepository.findByEmailVerifiedFalseAndLastLoginAtIsNullAndCreatedAtBefore(
-                        LocalDateTime.now().minusDays(7)
-                );
-
-        userRepository.deleteAll(staleUsers);
-
-        return staleUsers.size();
     }
 
     private User getUserWithValidOtp(String email, String otp) {

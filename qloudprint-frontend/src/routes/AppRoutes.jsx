@@ -1,172 +1,84 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-
-import Navbar from "../components/common/Navbar";
-
-import Home from "../pages/public/Home";
-import {
-  AboutUs,
-  ContactUs,
-  FAQ,
-  PickupPolicy,
-  PricingPolicy,
-  PrivacyPolicy,
-  RefundCancellationPolicy,
-  Sitemap,
-  TermsConditions
-} from "../pages/public/PublicInfoPages";
-
-import Login from "../pages/auth/Login";
-import Register from "../pages/auth/Register";
-import ForgotPassword from "../pages/auth/ForgotPassword";
-import VerifyEmail from "../pages/auth/VerifyEmail";
-
-import CustomerDashboard from "../pages/customer/CustomerDashboard";
-import ShopkeeperDashboard from "../pages/shopkeeper/ShopkeeperDashboard";
-
-import UploadOrder from "../pages/customer/UploadOrder";
-
 import ProtectedRoute from "./ProtectedRoute";
-import OptimizedQueue from "../pages/shopkeeper/OptimizedQueue";
 import DashboardLayout from "../layouts/DashboardLayout";
-import PaymentSuccess from "../pages/payment/PaymentSuccess";
-import OrderHistory from "../pages/customer/OrderHistory";
-import ScanQr from "../pages/shopkeeper/ScanQr";
-import ShopProfile from "../pages/shopkeeper/ShopProfile";
-import PlatformAnalytics from "../pages/admin/PlatformAnalytics";
-import AccountProfile from "../pages/account/AccountProfile";
-import ShopPublicProfile from "../pages/customer/ShopPublicProfile";
+
+const Home = lazy(() => import("../pages/public/Home"));
+const Login = lazy(() => import("../pages/auth/Login"));
+const Register = lazy(() => import("../pages/auth/Register"));
+const ForgotPassword = lazy(() => import("../pages/auth/ForgotPassword"));
+const CustomerDashboard = lazy(() => import("../pages/customer/CustomerDashboard"));
+const ShopkeeperDashboard = lazy(() => import("../pages/shopkeeper/ShopkeeperDashboard"));
+const UploadOrder = lazy(() => import("../pages/customer/UploadOrder"));
+const OptimizedQueue = lazy(() => import("../pages/shopkeeper/OptimizedQueue"));
+const PaymentSuccess = lazy(() => import("../pages/payment/PaymentSuccess"));
+const OrderHistory = lazy(() => import("../pages/customer/OrderHistory"));
+const ScanQr = lazy(() => import("../pages/shopkeeper/ScanQr"));
+const ShopProfile = lazy(() => import("../pages/shopkeeper/ShopProfile"));
+const PlatformAnalytics = lazy(() => import("../pages/admin/PlatformAnalytics"));
+const AccountProfile = lazy(() => import("../pages/account/AccountProfile"));
+const ShopPublicProfile = lazy(() => import("../pages/customer/ShopPublicProfile"));
+
+const lazyPublicPage = (exportName) =>
+  lazy(() =>
+    import("../pages/public/PublicInfoPages").then((module) => ({
+      default: module[exportName],
+    }))
+  );
+
+const AboutUs = lazyPublicPage("AboutUs");
+const ContactUs = lazyPublicPage("ContactUs");
+const FAQ = lazyPublicPage("FAQ");
+const PickupPolicy = lazyPublicPage("PickupPolicy");
+const PricingPolicy = lazyPublicPage("PricingPolicy");
+const PrivacyPolicy = lazyPublicPage("PrivacyPolicy");
+const RefundCancellationPolicy = lazyPublicPage("RefundCancellationPolicy");
+const Sitemap = lazyPublicPage("Sitemap");
+const TermsConditions = lazyPublicPage("TermsConditions");
+
+const RouteLoader = () => (
+  <div className="min-h-screen bg-slate-50 dark:bg-slate-950" />
+);
+
+const ProtectedDashboardRoute = ({ children }) => (
+  <ProtectedRoute>
+    <DashboardLayout>{children}</DashboardLayout>
+  </ProtectedRoute>
+);
 
 const AppRoutes = () => {
   return (
     <BrowserRouter>
+      <Suspense fallback={<RouteLoader />}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<AboutUs />} />
+          <Route path="/contact" element={<ContactUs />} />
+          <Route path="/pricing" element={<PricingPolicy />} />
+          <Route path="/faq" element={<FAQ />} />
+          <Route path="/terms-and-conditions" element={<TermsConditions />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/refund-cancellation-policy" element={<RefundCancellationPolicy />} />
+          <Route path="/pickup-policy" element={<PickupPolicy />} />
+          <Route path="/sitemap" element={<Sitemap />} />
 
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/about" element={<AboutUs />} />
-        <Route path="/contact" element={<ContactUs />} />
-        <Route path="/pricing" element={<PricingPolicy />} />
-        <Route path="/faq" element={<FAQ />} />
-        <Route path="/terms-and-conditions" element={<TermsConditions />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="/refund-cancellation-policy" element={<RefundCancellationPolicy />} />
-        <Route path="/pickup-policy" element={<PickupPolicy />} />
-        <Route path="/sitemap" element={<Sitemap />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
 
-        <Route path="/login" element={<Login />} />
-
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
-
-        <Route
-    path="/payment-success"
-    element={<PaymentSuccess />}
-/>
-
-        <Route
-          path="/customer/dashboard"
-          element={
-           <ProtectedRoute>
-    <DashboardLayout>
-        <CustomerDashboard />
-    </DashboardLayout>
-</ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/customer/orders"
-          element={
-           <ProtectedRoute>
-    <DashboardLayout>
-        <OrderHistory />
-    </DashboardLayout>
-</ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/shopkeeper/dashboard"
-          element={
-            <ProtectedRoute>
-            <DashboardLayout>
-                <ShopkeeperDashboard />
-            </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/shopkeeper/optimized-queue"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <OptimizedQueue />
-            </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/upload"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <UploadOrder />
-            </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/shopkeeper/profile"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <ShopProfile />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/customer/shops/:shopId"
-          element={
-           <ProtectedRoute>
-    <DashboardLayout>
-        <ShopPublicProfile />
-    </DashboardLayout>
-</ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/account"
-          element={
-           <ProtectedRoute>
-    <DashboardLayout>
-        <AccountProfile />
-    </DashboardLayout>
-</ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/analytics"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <PlatformAnalytics />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-    path="/shopkeeper/scan-qr"
-    element={<ScanQr />}
-/>
-      </Routes>
+          <Route path="/customer/dashboard" element={<ProtectedDashboardRoute><CustomerDashboard /></ProtectedDashboardRoute>} />
+          <Route path="/customer/orders" element={<ProtectedDashboardRoute><OrderHistory /></ProtectedDashboardRoute>} />
+          <Route path="/shopkeeper/dashboard" element={<ProtectedDashboardRoute><ShopkeeperDashboard /></ProtectedDashboardRoute>} />
+          <Route path="/shopkeeper/optimized-queue" element={<ProtectedDashboardRoute><OptimizedQueue /></ProtectedDashboardRoute>} />
+          <Route path="/upload" element={<ProtectedDashboardRoute><UploadOrder /></ProtectedDashboardRoute>} />
+          <Route path="/shopkeeper/profile" element={<ProtectedDashboardRoute><ShopProfile /></ProtectedDashboardRoute>} />
+          <Route path="/customer/shops/:shopId" element={<ProtectedDashboardRoute><ShopPublicProfile /></ProtectedDashboardRoute>} />
+          <Route path="/account" element={<ProtectedDashboardRoute><AccountProfile /></ProtectedDashboardRoute>} />
+          <Route path="/admin/analytics" element={<ProtectedDashboardRoute><PlatformAnalytics /></ProtectedDashboardRoute>} />
+          <Route path="/shopkeeper/scan-qr" element={<ScanQr />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 };

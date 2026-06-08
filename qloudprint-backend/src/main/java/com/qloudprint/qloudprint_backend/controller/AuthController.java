@@ -5,7 +5,6 @@ import com.qloudprint.qloudprint_backend.dto.OtpRequest;
 import com.qloudprint.qloudprint_backend.dto.RegisterRequest;
 import com.qloudprint.qloudprint_backend.dto.LoginRequest;
 import com.qloudprint.qloudprint_backend.dto.ResetPasswordRequest;
-import com.qloudprint.qloudprint_backend.dto.VerifyOtpRequest;
 import com.qloudprint.qloudprint_backend.service.AuthService;
 import com.qloudprint.qloudprint_backend.dto.AuthResponse;
 import jakarta.validation.Valid;
@@ -62,31 +61,6 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/verify-email")
-    public ResponseEntity<ApiResponse<Object>> verifyEmail(
-            @Valid @RequestBody VerifyOtpRequest request
-    ) {
-
-        String message = authService.verifyEmail(request);
-
-        return ResponseEntity.ok(
-                new ApiResponse<>(true, message, null)
-        );
-    }
-
-    @PostMapping("/resend-verification")
-    public ResponseEntity<ApiResponse<Object>> resendVerification(
-            @Valid @RequestBody OtpRequest request
-    ) {
-
-        Map<String, String> result =
-                authService.resendVerificationOtp(request.getEmail());
-
-        return ResponseEntity.ok(
-                new ApiResponse<>(true, result.get("message"), result)
-        );
-    }
-
     @PostMapping("/forgot-password")
     public ResponseEntity<ApiResponse<Object>> forgotPassword(
             @Valid @RequestBody OtpRequest request
@@ -125,18 +99,4 @@ public class AuthController {
         );
     }
 
-    @DeleteMapping("/cleanup-unverified")
-    public ResponseEntity<ApiResponse<Object>> cleanupUnverified() {
-
-        int deleted =
-                authService.deleteStaleUnverifiedUsers();
-
-        return ResponseEntity.ok(
-                new ApiResponse<>(
-                        true,
-                        "Deleted stale unverified accounts",
-                        Map.of("deleted", deleted)
-                )
-        );
-    }
 }

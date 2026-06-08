@@ -17,7 +17,6 @@ const Register = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ name: "", email: "", password: "", role: "CUSTOMER" });
-  const [registeredEmail, setRegisteredEmail] = useState("");
   const [passwordStrength, setPasswordStrength] = useState({
   score: 0,
   label: "",
@@ -76,11 +75,8 @@ const checkPasswordStrength = (password) => {
         return;
       }
 
-      const email = formData.email.trim();
-
-      setRegisteredEmail(email);
-      toast.success(response.data?.message || "Account created. Verify your email.");
-      navigate(`/verify-email?email=${encodeURIComponent(email)}`, { replace: true });
+      toast.success(response.data?.message || "Account created. You can login now.");
+      navigate("/login", { replace: true });
     } catch (error) {
       toast.error(error.response?.data?.message || "Something went wrong");
     } finally {
@@ -171,15 +167,6 @@ const checkPasswordStrength = (password) => {
             {loading ? <Loader2 className="animate-spin" size={18} /> : <UserPlus size={18} />}
             Create account
           </button>
-          {registeredEmail && (
-            <button
-              type="button"
-              onClick={() => navigate(`/verify-email?email=${encodeURIComponent(registeredEmail)}`)}
-              className="premium-button secondary w-full"
-            >
-              Continue to email verification
-            </button>
-          )}
         </form>
       </div>
 

@@ -8,14 +8,6 @@ export const loginUser = async (userData) => {
     return await api.post("/auth/login", userData);
 };
 
-export const verifyEmail = async (data) => {
-    return api.post("/auth/verify-email", data);
-};
-
-export const resendVerificationOtp = async (email) => {
-    return api.post("/auth/resend-verification", { email });
-};
-
 export const forgotPassword = async (email) => {
     return api.post("/auth/forgot-password", { email });
 };

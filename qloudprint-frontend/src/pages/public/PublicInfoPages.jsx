@@ -246,7 +246,7 @@ export const PrivacyPolicy = () => (
             />
         </Section>
         <Section title="How We Use Information">
-            <p>We use information to create accounts, verify email or phone, process orders, show nearby shops, calculate prices, manage payments and refunds, generate invoices, support payouts, prevent fraud, and improve the platform.</p>
+            <p>We use information to create accounts, process orders, show nearby shops, calculate prices, manage payments and refunds, generate invoices, support payouts, prevent fraud, and improve the platform.</p>
         </Section>
         <Section title="Payments">
             <p>QloudPrint does not store card numbers, UPI PINs, net banking passwords, or payment OTPs. Payment processing is handled through authorized payment gateway services.</p>

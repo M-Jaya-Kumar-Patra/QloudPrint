@@ -32,8 +32,6 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    private Boolean emailVerified;
-
     private String otpCode;
 
     private LocalDateTime otpExpiresAt;
